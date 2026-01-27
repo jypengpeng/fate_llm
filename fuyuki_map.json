@@ -1,0 +1,380 @@
+{
+  "map_id": "fuyuki_city",
+  "map_name": "冬木市",
+  "map_name_english": "Fuyuki City",
+  "description": "第五次圣杯战争的舞台，位于日本的地方城市",
+  "regions": {
+    "miyama": {
+      "name": "深山町",
+      "english_name": "Miyama District",
+      "description": "冬木市的老城区，保留了大量传统日式建筑"
+    },
+    "shinto": {
+      "name": "新都",
+      "english_name": "Shinto District",
+      "description": "冬木市的现代商业中心"
+    },
+    "bridge": {
+      "name": "大桥区域",
+      "english_name": "Bridge Area",
+      "description": "连接深山町和新都的桥梁区域"
+    },
+    "outskirts": {
+      "name": "郊外",
+      "english_name": "Outskirts",
+      "description": "冬木市周边的森林和山区"
+    }
+  },
+  "locations": {
+    "miyama_crossroads": {
+      "node_id": "miyama_crossroads",
+      "name": "深山町十字路口",
+      "english_name": "Miyama Crossroads",
+      "description": "交通枢纽，通往老城区各地。作为深山町的中心地带，这里是多条道路的交汇点。",
+      "region": "miyama",
+      "connections": ["emiya_residence", "tohsaka_residence", "shopping_district", "homurahara_academy"],
+      "mana_density": 2,
+      "population": "High",
+      "tactical_type": "Hub",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "交通枢纽",
+        "多条道路交汇",
+        "人流密集"
+      ]
+    },
+    "emiya_residence": {
+      "node_id": "emiya_residence",
+      "name": "卫宫宅邸",
+      "english_name": "Emiya Residence",
+      "description": "典型的日式大宅，仓库中有召唤阵。易守难攻的据点，曾是第四次圣杯战争的御主卫宫切嗣的住所。",
+      "region": "miyama",
+      "connections": ["miyama_crossroads"],
+      "mana_density": 3,
+      "population": "None",
+      "tactical_type": "Fortress",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "小型工房",
+        "土仓",
+        "简易结界"
+      ]
+    },
+    "tohsaka_residence": {
+      "node_id": "tohsaka_residence",
+      "name": "远坂宅邸",
+      "english_name": "Tohsaka Residence",
+      "description": "位于高处的洋馆，也是灵脉的节点之一。远坂家世代经营的魔术工房，拥有强力的防御结界。",
+      "region": "miyama",
+      "connections": ["miyama_crossroads"],
+      "mana_density": 4,
+      "population": "None",
+      "tactical_type": "Fortress",
+      "is_unlocked": true,
+      "is_safe_zone": true,
+      "special_features": [
+        "魔术工房",
+        "强力结界",
+        "宝石魔术阵"
+      ]
+    },
+    "homurahara_academy": {
+      "node_id": "homurahara_academy",
+      "name": "穗群原学园",
+      "english_name": "Homurahara Academy",
+      "description": "主角们的学校，白天人多眼杂，夜晚有Ghost Liner传说。学园内存在若干灵异现象。",
+      "region": "miyama",
+      "connections": ["miyama_crossroads", "mountain_path"],
+      "mana_density": 2,
+      "population": "Very High",
+      "tactical_type": "Complex",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "学校",
+        "白天人多",
+        "夜间无人"
+      ]
+    },
+    "shopping_district": {
+      "node_id": "shopping_district",
+      "name": "商店街",
+      "english_name": "Shopping District",
+      "description": "充满生活气息的街道，很难在这里进行大规模战斗。平民往来频繁，是维持日常的重要场所。",
+      "region": "miyama",
+      "connections": ["miyama_crossroads", "fuyuki_bridge"],
+      "mana_density": 1,
+      "population": "High",
+      "tactical_type": "Urban",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "商业区",
+        "情报收集",
+        "物资补给"
+      ]
+    },
+    "mountain_path": {
+      "node_id": "mountain_path",
+      "name": "圆藏山脚",
+      "english_name": "Mountain Path",
+      "description": "通往柳洞寺的长台阶，Assassin职阶最喜欢的「守门」地点。狭窄的通道使其成为天然的隘口。",
+      "region": "miyama",
+      "connections": ["homurahara_academy", "ryuudou_temple"],
+      "mana_density": 3,
+      "population": "Low",
+      "tactical_type": "Chokepoint",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "长台阶",
+        "天然隘口",
+        "适合伏击"
+      ]
+    },
+    "ryuudou_temple": {
+      "node_id": "ryuudou_temple",
+      "name": "柳洞寺",
+      "english_name": "Ryuudou Temple",
+      "description": "位于圆藏山顶的古老寺庙，拥有足以压制从者的强力结界。灵脉的核心所在，是Caster职阶的天堂。",
+      "region": "miyama",
+      "connections": ["mountain_path", "einzbern_forest"],
+      "mana_density": 5,
+      "population": "Low",
+      "tactical_type": "Fortress",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "灵脉中心",
+        "大型结界",
+        "山门天然要塞"
+      ]
+    },
+    "einzbern_forest": {
+      "node_id": "einzbern_forest",
+      "name": "爱因兹贝伦森林",
+      "english_name": "Einzbern Forest",
+      "description": "城郊的神秘森林，通往爱因兹贝伦城堡。森林中布满了结界和陷阱，贸然进入极其危险。",
+      "region": "outskirts",
+      "connections": ["ryuudou_temple"],
+      "mana_density": 4,
+      "population": "None",
+      "tactical_type": "Fortress",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "结界陷阱",
+        "森林地形",
+        "通往城堡"
+      ]
+    },
+    "fuyuki_bridge": {
+      "node_id": "fuyuki_bridge",
+      "name": "冬木大桥",
+      "english_name": "Fuyuki Bridge",
+      "description": "连接新旧两都的唯一陆路通道，开阔，无遮挡，适合决斗或狙击。桥上的战斗往往是最激烈的。",
+      "region": "bridge",
+      "connections": ["shopping_district", "riverside_park"],
+      "mana_density": 3,
+      "population": "Medium",
+      "tactical_type": "Bridge",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "战略要地",
+        "开阔地形",
+        "历史战场"
+      ]
+    },
+    "riverside_park": {
+      "node_id": "riverside_park",
+      "name": "临海公园",
+      "english_name": "Riverside Park",
+      "description": "位于河边的开阔绿地，夜晚是经典的遭遇战地点。视野开阔，适合从者之间的正面对决。",
+      "region": "shinto",
+      "connections": ["fuyuki_bridge", "shinto_center"],
+      "mana_density": 2,
+      "population": "Medium",
+      "tactical_type": "Open",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "开阔地形",
+        "视野良好",
+        "适合正面对决"
+      ]
+    },
+    "shinto_center": {
+      "node_id": "shinto_center",
+      "name": "新都中心",
+      "english_name": "Shinto Center",
+      "description": "繁华的商业中心，也是去往各处的必经之地。高楼林立，现代都市的象征。",
+      "region": "shinto",
+      "connections": ["riverside_park", "center_building", "fuyuki_church", "fuyuki_harbor"],
+      "mana_density": 2,
+      "population": "Very High",
+      "tactical_type": "Urban",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "高楼林立",
+        "人流密集",
+        "监控摄像头"
+      ]
+    },
+    "center_building": {
+      "node_id": "center_building",
+      "name": "凯悦酒店",
+      "english_name": "Center Building",
+      "description": "冬木市最高的建筑，适合Archer职阶进行超远程侦查或狙击。视野可覆盖整个冬木市。",
+      "region": "shinto",
+      "connections": ["shinto_center"],
+      "mana_density": 2,
+      "population": "High",
+      "tactical_type": "Vantage Point",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "最高建筑",
+        "狙击点",
+        "全城视野"
+      ]
+    },
+    "fuyuki_church": {
+      "node_id": "fuyuki_church",
+      "name": "冬木教会",
+      "english_name": "Fuyuki Church",
+      "description": "中立地带（名义上），监督者的所在地，存放灵器的地方。退出战争的御主可在此获得庇护。",
+      "region": "shinto",
+      "connections": ["shinto_center"],
+      "mana_density": 4,
+      "population": "Low",
+      "tactical_type": "Sanctuary",
+      "is_unlocked": true,
+      "is_safe_zone": true,
+      "special_features": [
+        "中立地带",
+        "监督者驻地",
+        "神圣结界"
+      ]
+    },
+    "fuyuki_harbor": {
+      "node_id": "fuyuki_harbor",
+      "name": "冬木港",
+      "english_name": "Fuyuki Harbor",
+      "description": "集装箱堆放地，经典的「仓库街」，极其适合放开手脚战斗。第四次圣杯战争的最终决战地。",
+      "region": "shinto",
+      "connections": ["shinto_center"],
+      "mana_density": 2,
+      "population": "None",
+      "tactical_type": "Industrial",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "special_features": [
+        "废弃区域",
+        "适合决斗",
+        "无人区"
+      ]
+    }
+  },
+  "tactical_types": {
+    "Fortress": {
+      "description": "防御型地形，对防守方有利",
+      "defense_bonus": 1.2,
+      "ambush_chance": 0.3
+    },
+    "Urban": {
+      "description": "城市环境，战斗容易暴露",
+      "exposure_risk": 0.5,
+      "escape_routes": 4
+    },
+    "Chokepoint": {
+      "description": "要塞地形，控制通行",
+      "movement_penalty": 0.5,
+      "tactical_advantage": 1.3
+    },
+    "Open": {
+      "description": "开阔地形，适合全力战斗",
+      "combat_bonus": 1.1,
+      "noble_phantasm_effectiveness": 1.2
+    },
+    "Hub": {
+      "description": "交通枢纽，连接多个区域",
+      "movement_bonus": 1.5,
+      "encounter_chance": 0.4
+    },
+    "Bridge": {
+      "description": "桥梁地形，战略要地",
+      "tactical_advantage": 1.2,
+      "escape_routes": 2
+    },
+    "Complex": {
+      "description": "复杂建筑群，昼夜差异大",
+      "day_exposure_risk": 0.8,
+      "night_ambush_chance": 0.4
+    },
+    "Sanctuary": {
+      "description": "圣域，名义上的中立地带",
+      "combat_penalty": 0.5,
+      "is_neutral": true
+    },
+    "Vantage Point": {
+      "description": "制高点，适合侦查和狙击",
+      "visibility_bonus": 2.0,
+      "archer_bonus": 1.5
+    },
+    "Industrial": {
+      "description": "工业区，适合大规模战斗",
+      "combat_bonus": 1.2,
+      "collateral_damage_allowed": true
+    }
+  },
+  "time_phases": {
+    "dawn": {
+      "name": "黎明",
+      "description": "日出时分，大多数人还在睡眠",
+      "visibility": 0.6,
+      "population_modifier": 0.2,
+      "magic_effectiveness": 0.9
+    },
+    "day": {
+      "name": "白天",
+      "description": "阳光充足，人流密集",
+      "visibility": 1.0,
+      "population_modifier": 1.0,
+      "magic_effectiveness": 0.7
+    },
+    "dusk": {
+      "name": "黄昏",
+      "description": "日落时分，人们开始归家",
+      "visibility": 0.7,
+      "population_modifier": 0.8,
+      "magic_effectiveness": 0.9
+    },
+    "night": {
+      "name": "夜晚",
+      "description": "黑暗降临，从者们的狩猎时间",
+      "visibility": 0.4,
+      "population_modifier": 0.3,
+      "magic_effectiveness": 1.0
+    },
+    "midnight": {
+      "name": "午夜",
+      "description": "深夜时分，世界陷入沉睡",
+      "visibility": 0.2,
+      "population_modifier": 0.1,
+      "magic_effectiveness": 1.2
+    }
+  },
+  "class_location_preferences": {
+    "Saber": ["emiya_residence", "fuyuki_bridge", "shinto_center"],
+    "Archer": ["center_building", "fuyuki_church", "fuyuki_bridge", "tohsaka_residence"],
+    "Lancer": ["fuyuki_bridge", "fuyuki_harbor", "shinto_center", "riverside_park"],
+    "Rider": ["fuyuki_harbor", "shinto_center", "fuyuki_bridge"],
+    "Caster": ["ryuudou_temple", "fuyuki_church", "tohsaka_residence"],
+    "Assassin": ["ryuudou_temple", "mountain_path", "shinto_center", "fuyuki_harbor"],
+    "Berserker": ["einzbern_forest", "fuyuki_harbor", "fuyuki_bridge"]
+  }
+}

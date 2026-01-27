@@ -1,0 +1,16 @@
+services:
+  fate-llm-service:
+    image: fate-llm
+    build: .
+    container_name: fate-llm
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      # 将当前目录挂载到容器的 /app
+      - ./:/app
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - FLASK_ENV=development

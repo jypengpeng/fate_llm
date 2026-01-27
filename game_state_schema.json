@@ -1,0 +1,514 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Holy Grail War Game State Schema - Fate/Moon Cell Collector",
+    "last_updated": "2025-12-21"
+  },
+
+  "global_state": {
+    "game_id": "hgw_001_fuyuki",
+    "turn_count": 1,
+    "time_phase": "night",
+    "weather": "clear",
+    "current_location_id": "tohsaka_manor",
+    "is_battle_active": false,
+    "valid_time_phases": ["dawn", "day", "dusk", "night", "midnight"],
+    "valid_weather_types": ["clear", "cloudy", "rainy", "stormy", "foggy"]
+  },
+
+  "master": {
+    "name": "御主",
+    "title": "魔术师",
+    "avatar_url": "",
+    "command_spells": 3,
+    "mana": {
+      "current": 100,
+      "max": 100
+    },
+    "health_status": "healthy",
+    "valid_health_statuses": ["healthy", "fatigued", "injured", "critical", "unconscious"],
+    "inventory": [
+      {
+        "id": "wallet",
+        "name": "钱包",
+        "count": 1,
+        "desc": "里面有5万日元，足够几天的生活开销",
+        "usable": false
+      },
+      {
+        "id": "gem_red",
+        "name": "红色魔术宝石",
+        "count": 3,
+        "desc": "储存着火属性魔力的宝石，可释放爆炎",
+        "usable": true,
+        "effect": "damage_fire"
+      },
+      {
+        "id": "gem_blue",
+        "name": "蓝色魔术宝石",
+        "count": 2,
+        "desc": "储存着水属性魔力的宝石，可用于防御结界",
+        "usable": true,
+        "effect": "barrier"
+      },
+      {
+        "id": "phone",
+        "name": "手机",
+        "count": 1,
+        "desc": "普通的智能手机，可以查看新闻和联系他人",
+        "usable": true,
+        "effect": "communication"
+      },
+      {
+        "id": "first_aid",
+        "name": "急救包",
+        "count": 1,
+        "desc": "简易医疗用品，可以处理轻伤",
+        "usable": true,
+        "effect": "heal_minor"
+      }
+    ]
+  },
+
+  "player_servant": {
+    "class": "Saber",
+    "true_name": "阿尔托莉雅·潘德拉贡",
+    "true_name_revealed": true,
+    "alias": "Artoria Pendragon",
+    "image_url": "chara/阿尔托莉雅·潘德拉贡/images/saber_initial.png",
+    "hp": {
+      "current": 15000,
+      "max": 15000
+    },
+    "np_gauge": 0,
+    "parameters": {
+      "strength": "B",
+      "endurance": "A",
+      "agility": "B",
+      "mana": "A",
+      "luck": "C",
+      "np": "A++"
+    },
+    "bond_level": 1,
+    "max_bond_level": 5,
+    "skills": [
+      {
+        "id": "instinct",
+        "name": "直感",
+        "rank": "A",
+        "description": "在战斗中感知最佳行动方案的能力"
+      },
+      {
+        "id": "mana_burst",
+        "name": "魔力放出",
+        "rank": "A",
+        "description": "将魔力注入武器进行强化攻击"
+      },
+      {
+        "id": "charisma",
+        "name": "魅力",
+        "rank": "B",
+        "description": "作为军队指挥官的天赋"
+      }
+    ],
+    "noble_phantasms": [
+      {
+        "id": "excalibur",
+        "name": "誓约胜利之剑",
+        "name_ruby": "Excalibur",
+        "rank": "A++",
+        "type": "对城宝具",
+        "description": "聚集希望之光的神圣之剑，其一击足以改变战局"
+      }
+    ],
+    "state_flags": [],
+    "valid_state_flags": ["stealth", "poisoned", "cursed", "np_sealed", "skill_sealed", "enraged", "blessed", "weakened"]
+  },
+
+  "enemy_intel": {
+    "Saber": {
+      "status": "alive",
+      "is_player": true,
+      "true_name_revealed": true,
+      "known_true_name": "阿尔托莉雅·潘德拉贡",
+      "known_info": [],
+      "last_seen_location": "tohsaka_manor",
+      "last_seen_time": "night"
+    },
+    "Archer": {
+      "status": "alive",
+      "is_player": false,
+      "true_name_revealed": false,
+      "known_true_name": null,
+      "known_info": [
+        "拥有大量投射武器",
+        "态度高傲，似乎看不起其他从者"
+      ],
+      "last_seen_location": "unknown",
+      "last_seen_time": null
+    },
+    "Lancer": {
+      "status": "alive",
+      "is_player": false,
+      "true_name_revealed": false,
+      "known_true_name": null,
+      "known_info": [
+        "使用长枪战斗",
+        "速度极快"
+      ],
+      "last_seen_location": "school",
+      "last_seen_time": "dusk"
+    },
+    "Rider": {
+      "status": "alive",
+      "is_player": false,
+      "true_name_revealed": false,
+      "known_true_name": null,
+      "known_info": [],
+      "last_seen_location": "unknown",
+      "last_seen_time": null
+    },
+    "Caster": {
+      "status": "alive",
+      "is_player": false,
+      "true_name_revealed": false,
+      "known_true_name": null,
+      "known_info": [
+        "疑似在柳洞寺建立了工房"
+      ],
+      "last_seen_location": "ryuudou_temple",
+      "last_seen_time": "night"
+    },
+    "Assassin": {
+      "status": "alive",
+      "is_player": false,
+      "true_name_revealed": false,
+      "known_true_name": null,
+      "known_info": [],
+      "last_seen_location": "unknown",
+      "last_seen_time": null
+    },
+    "Berserker": {
+      "status": "alive",
+      "is_player": false,
+      "true_name_revealed": false,
+      "known_true_name": null,
+      "known_info": [
+        "异常的魔力反应",
+        "极其危险"
+      ],
+      "last_seen_location": "forest",
+      "last_seen_time": "midnight"
+    }
+  },
+
+  "quest_log": {
+    "current_objective": "与召唤的从者建立契约，了解圣杯战争的规则",
+    "main_quests": [
+      {
+        "id": "mq_001",
+        "title": "圣杯战争序章",
+        "description": "成功召唤从者，正式成为御主",
+        "status": "completed"
+      },
+      {
+        "id": "mq_002",
+        "title": "情报收集",
+        "description": "了解其他参战者的信息",
+        "status": "active"
+      },
+      {
+        "id": "mq_003",
+        "title": "生存之道",
+        "description": "在圣杯战争中存活下来",
+        "status": "active"
+      }
+    ],
+    "side_quests": [],
+    "clues": [
+      {
+        "id": "clue_001",
+        "category": "enemy",
+        "target": "Caster",
+        "content": "柳洞寺附近感应到强烈的魔力波动",
+        "obtained_at": "turn_1",
+        "is_important": true
+      }
+    ]
+  },
+
+  "locations": [
+    {
+      "id": "tohsaka_manor",
+      "name": "远坂邸",
+      "name_en": "Tohsaka Manor",
+      "region": "miyama",
+      "is_unlocked": true,
+      "is_safe_zone": true,
+      "description": "位于深山町高台的西洋风格宅邸，是远坂家族世代居住的魔术工房。这里设有强大的结界，能够有效阻挡外敌入侵。",
+      "available_actions": ["rest", "research", "plan"],
+      "danger_level": 0,
+      "map_position": { "x": 75, "y": 25 }
+    },
+    {
+      "id": "emiya_residence",
+      "name": "卫宫宅",
+      "name_en": "Emiya Residence",
+      "region": "miyama",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "description": "位于深山町的传统日式住宅，院子里有一间土蔵改建的仓库。",
+      "available_actions": ["investigate", "scout"],
+      "danger_level": 2,
+      "map_position": { "x": 60, "y": 35 }
+    },
+    {
+      "id": "school",
+      "name": "�的原学园",
+      "name_en": "Homurahara Academy",
+      "region": "miyama",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "description": "冬木市的高中，夜间成为了从者们战斗的舞台。校园内部复杂的建筑结构提供了许多战术选择。",
+      "available_actions": ["investigate", "scout", "ambush"],
+      "danger_level": 3,
+      "map_position": { "x": 45, "y": 30 }
+    },
+    {
+      "id": "fuyuki_bridge",
+      "name": "冬木大桥",
+      "name_en": "Fuyuki Bridge",
+      "region": "bridge",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "description": "连接新都与深山町的钢铁巨桥，横跨未远川。开阔的地形使得这里成为Archer职阶的理想战场。",
+      "available_actions": ["scout", "travel"],
+      "danger_level": 4,
+      "map_position": { "x": 50, "y": 55 }
+    },
+    {
+      "id": "shinto",
+      "name": "新都",
+      "name_en": "Shinto",
+      "region": "shinto",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "description": "冬木市的商业中心，高楼大厦林立。夜间人迹罕至，但白天人流众多，不适合战斗。",
+      "available_actions": ["investigate", "scout", "shop"],
+      "danger_level": 2,
+      "map_position": { "x": 50, "y": 75 }
+    },
+    {
+      "id": "ryuudou_temple",
+      "name": "柳洞寺",
+      "name_en": "Ryuudou Temple",
+      "region": "miyama",
+      "is_unlocked": false,
+      "unlock_condition": "obtain_clue_caster_location",
+      "is_safe_zone": false,
+      "description": "位于深山町山顶的古老寺庙，据传是灵脉汇聚之地。有传言称Caster在此建立了工房。",
+      "available_actions": ["investigate", "infiltrate"],
+      "danger_level": 5,
+      "map_position": { "x": 25, "y": 20 }
+    },
+    {
+      "id": "einzbern_forest",
+      "name": "爱因兹贝伦森林",
+      "name_en": "Einzbern Forest",
+      "region": "outskirts",
+      "is_unlocked": false,
+      "unlock_condition": "story_progress_day_3",
+      "is_safe_zone": false,
+      "description": "冬木市郊外的广袤森林，深处据说有一座神秘的城堡。这片森林被浓厚的魔力所笼罩。",
+      "available_actions": ["investigate", "scout"],
+      "danger_level": 5,
+      "map_position": { "x": 15, "y": 45 }
+    },
+    {
+      "id": "church",
+      "name": "冬木教会",
+      "name_en": "Fuyuki Church",
+      "region": "miyama",
+      "is_unlocked": true,
+      "is_safe_zone": true,
+      "description": "位于深山町小山丘上的教会，由圣杯战争的监督者——言峰绮礼神父主持。这里是中立地带。",
+      "available_actions": ["talk", "rest", "seek_protection"],
+      "danger_level": 0,
+      "map_position": { "x": 85, "y": 40 }
+    },
+    {
+      "id": "harbor",
+      "name": "冬木港",
+      "name_en": "Fuyuki Harbor",
+      "region": "shinto",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "description": "新都的港口区域，夜间十分寂静。码头和仓库区提供了良好的埋伏地点。",
+      "available_actions": ["investigate", "scout", "ambush"],
+      "danger_level": 3,
+      "map_position": { "x": 70, "y": 85 }
+    },
+    {
+      "id": "shopping_district",
+      "name": "商店街",
+      "name_en": "Shopping District",
+      "region": "miyama",
+      "is_unlocked": true,
+      "is_safe_zone": false,
+      "description": "深山町的商业区，有各种商店和餐馆。白天人来人往，晚上则相对冷清。",
+      "available_actions": ["shop", "investigate", "rest"],
+      "danger_level": 1,
+      "map_position": { "x": 55, "y": 40 }
+    }
+  ],
+
+  "god_view": {
+    "_comment": "此部分为后台数据，不向玩家展示，仅用于导演系统判定",
+    "enemy_servants_actual": {
+      "Archer": {
+        "true_name": "吉尔伽美什",
+        "master": "言峰绮礼",
+        "current_location": "church",
+        "current_action": "observing",
+        "hp_current": 18000,
+        "hp_max": 18000,
+        "hostility_level": 3,
+        "ai_personality": "arrogant_observer"
+      },
+      "Lancer": {
+        "true_name": "库·丘林",
+        "master": "巴泽特·弗拉加·麦克雷明茨",
+        "current_location": "harbor",
+        "current_action": "patrol",
+        "hp_current": 14000,
+        "hp_max": 14000,
+        "hostility_level": 2,
+        "ai_personality": "honorable_warrior"
+      },
+      "Rider": {
+        "true_name": "美杜莎",
+        "master": "间桐慎二",
+        "current_location": "school",
+        "current_action": "hiding",
+        "hp_current": 11000,
+        "hp_max": 11000,
+        "hostility_level": 1,
+        "ai_personality": "passive_defensive"
+      },
+      "Caster": {
+        "true_name": "美狄亚",
+        "master": "�的原�的一",
+        "current_location": "ryuudou_temple",
+        "current_action": "fortifying",
+        "hp_current": 12000,
+        "hp_max": 12000,
+        "hostility_level": 4,
+        "ai_personality": "scheming_mage"
+      },
+      "Assassin": {
+        "true_name": "佐佐木小次郎",
+        "master": "Caster",
+        "current_location": "ryuudou_temple",
+        "current_action": "guarding",
+        "hp_current": 9000,
+        "hp_max": 9000,
+        "hostility_level": 2,
+        "ai_personality": "dutiful_guard"
+      },
+      "Berserker": {
+        "true_name": "赫拉克勒斯",
+        "master": "伊莉雅斯菲尔·冯·爱因兹贝伦",
+        "current_location": "einzbern_forest",
+        "current_action": "waiting",
+        "hp_current": 25000,
+        "hp_max": 25000,
+        "hostility_level": 5,
+        "ai_personality": "berserker_protector"
+      }
+    },
+    "world_events": [
+      {
+        "id": "event_001",
+        "trigger_condition": "turn >= 3",
+        "event_type": "encounter",
+        "description": "Lancer会在夜间巡逻时与玩家相遇",
+        "triggered": false
+      },
+      {
+        "id": "event_002",
+        "trigger_condition": "location == ryuudou_temple",
+        "event_type": "boss_battle",
+        "description": "进入柳洞寺将触发与Assassin的战斗",
+        "triggered": false
+      }
+    ]
+  },
+
+  "story_history": {
+    "_comment": "TimelineEvent数组 - 每个LLM响应封装为一个事件对象，用于上下文管理",
+    "events": [
+      {
+        "id": "evt_001_summon",
+        "turn_index": 1,
+        
+        "context_snapshot": {
+          "day": 1,
+          "phase": "night",
+          "location_id": "tohsaka_manor",
+          "location_name": "远坂邸",
+          "active_servant_class": "Saber",
+          "master_hp_status": "healthy",
+          "servant_hp_percent": 100,
+          "mana_percent": 100
+        },
+
+        "player_action": {
+          "type": "system",
+          "content": null
+        },
+
+        "narrative_content": "召唤仪式终于完成了。\n\n魔力逐渐平息，召唤阵的光芒缓缓消散。你的面前，站着的是回应你呼唤的**英灵**。\n\n空气中仍残留着魔力流动的余韵。这场圣杯战争，从此刻正式拉开了帷幕。\n\n*窗外的月光透过玻璃，映照在英灵的身姿上。深夜的冬木市一片寂静，但你知道，这份宁静不会持续太久。*",
+
+        "summary": "第1天深夜，玩家在远坂邸成功召唤从者。圣杯战争正式开始。",
+
+        "display_type": "story",
+        "keywords": ["召唤", "从者", "圣杯战争开始"],
+        "is_bookmarked": false,
+        "timestamp": "2025-12-21T00:00:00Z"
+      }
+    ],
+    "config": {
+      "max_events": 500,
+      "recent_window_size": 5,
+      "summary_compression_threshold": 10
+    }
+  },
+
+  "prompt_config": {
+    "_comment": "LLM Prompt构建配置",
+    "global_background": "你是一个互动小说的叙事者，正在讲述一个发生在日本冬木市的圣杯战争故事。玩家是一名魔术师御主，已召唤了自己的从者参战。你需要根据玩家的行动，生成引人入胜的剧情发展。保持Fate系列的风格：神秘、紧张、偶尔温馨的日常。",
+    "response_format": {
+      "narrative": "生成800-1500字的剧情正文，使用Markdown格式。用**粗体**标注重要角色名和关键物品。用*斜体*表示内心独白或环境描写。",
+      "summary": "用50字以内概括这一回合发生的核心事件。",
+      "state_updates": "如有数值变化（HP、魔力、位置等），以JSON格式返回。"
+    },
+    "sliding_window": {
+      "use_summaries_before": 5,
+      "full_content_recent": 3
+    }
+  },
+
+  "battle_state": {
+    "_comment": "战斗时的临时状态，is_battle_active为true时使用",
+    "is_active": false,
+    "turn": 0,
+    "participants": [],
+    "current_actor": null,
+    "action_queue": [],
+    "battlefield": {
+      "location_id": null,
+      "terrain_type": null,
+      "environmental_effects": []
+    }
+  }
+}

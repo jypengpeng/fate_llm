@@ -1,0 +1,5287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圣杯战争 - Holy Grail War</title>
+    <style>
+        /* CSS Variables */
+        :root {
+            --primary-gold: #d4af37;
+            --secondary-gold: #ffd700;
+            --dark-bg: #050508;
+            --panel-bg: #0d0d14;
+            --text-primary: #e8e8e8;
+            --text-secondary: #8a8a9a;
+            --border-glow: rgba(212, 175, 55, 0.3);
+            --blood-red: #8b0000;
+            --magic-blue: #00bfff;
+            --hp-green: #4CAF50;
+            --np-yellow: #ffd700;
+            --danger-red: #cc4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(5, 5, 8, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(212, 175, 55, 0.5), rgba(139, 107, 20, 0.5));
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(212, 175, 55, 0.7), rgba(139, 107, 20, 0.7));
+        }
+
+        body {
+            font-family: 'Noto Serif SC', 'SimSun', serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .game-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(0, 191, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(139, 0, 0, 0.03) 0%, transparent 50%),
+                var(--dark-bg);
+        }
+
+        /* Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: linear-gradient(180deg, rgba(13, 13, 20, 0.98) 0%, rgba(5, 5, 8, 0.95) 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .header-btn {
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .header-btn:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .time-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 4px;
+        }
+
+        .day-counter {
+            color: var(--primary-gold);
+            font-size: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .time-phase {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .time-phase.night { color: #6a5acd; }
+        .time-phase.day { color: #ffd700; }
+        .time-phase.dusk { color: #ff6347; }
+        .time-phase.dawn { color: #ffb6c1; }
+
+        /* Main Content Area */
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr 380px;
+            gap: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Panel Base Styles */
+        .panel {
+            background: linear-gradient(180deg, rgba(13, 13, 20, 0.98) 0%, rgba(5, 5, 8, 0.95) 100%);
+            border-right: 1px solid rgba(212, 175, 55, 0.15);
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .panel:last-child {
+            border-right: none;
+            border-left: 1px solid rgba(212, 175, 55, 0.15);
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            color: var(--primary-gold);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title::before {
+            content: '◆';
+            font-size: 0.7rem;
+        }
+
+        /* Left Panel - Status */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Master Status */
+        .master-status {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .master-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .master-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(139, 0, 0, 0.3));
+            border: 2px solid var(--primary-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .master-info {
+            flex: 1;
+        }
+
+        .master-name {
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .master-title {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* Command Spells */
+        .command-spells {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .command-spell {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--blood-red);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .command-spell.active {
+            background: radial-gradient(circle, rgba(139, 0, 0, 0.8), rgba(80, 0, 0, 0.9));
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+        }
+
+        .command-spell.active::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff4444"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"/></svg>') center/contain no-repeat;
+        }
+
+        .command-spell:hover:not(.used) {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.6);
+        }
+
+        .command-spell.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #444;
+        }
+
+        .command-spell-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        /* Status Bars */
+        .status-bar-container {
+            margin-bottom: 12px;
+        }
+
+        .status-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .status-bar-label span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .status-bar-label span:last-child {
+            color: var(--text-primary);
+        }
+
+        .status-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .status-bar-fill.mana {
+            background: linear-gradient(90deg, #1e90ff, #00bfff);
+            box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+        }
+
+        .physical-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .physical-status-label {
+            color: var(--text-secondary);
+        }
+
+        .physical-status-value {
+            color: var(--hp-green);
+            font-weight: bold;
+        }
+
+        .physical-status-value.injured {
+            color: #ffa500;
+        }
+
+        .physical-status-value.critical {
+            color: var(--danger-red);
+        }
+
+        /* Servant Status */
+        .servant-status {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .servant-portrait-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.8), rgba(10, 10, 20, 0.9));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .servant-portrait {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.3));
+        }
+
+        .servant-class-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--primary-gold);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .servant-class-badge img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .servant-class-badge span {
+            color: var(--primary-gold);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .servant-name-display {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .servant-name-display .main-name {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        .servant-name-display .sub-name {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        /* Radar Chart Container */
+        .radar-chart-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        #servantRadarChart {
+            max-width: 200px;
+            max-height: 200px;
+        }
+
+        /* HP/NP Bars */
+        .combat-stats {
+            margin-top: 12px;
+        }
+
+        .status-bar-fill.hp {
+            background: linear-gradient(90deg, #2e7d32, #4CAF50);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .status-bar-fill.np {
+            background: linear-gradient(90deg, #f9a825, #ffd700);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Bond Level */
+        .bond-level {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .bond-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .bond-hearts {
+            display: flex;
+            gap: 4px;
+        }
+
+        .bond-heart {
+            width: 16px;
+            height: 16px;
+            opacity: 0.3;
+        }
+
+        .bond-heart.filled {
+            opacity: 1;
+            filter: drop-shadow(0 0 5px #ff69b4);
+        }
+
+        /* Inventory */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .inventory-slot {
+            aspect-ratio: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .inventory-slot:hover {
+            border-color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .inventory-slot.empty {
+            opacity: 0.5;
+        }
+
+        /* Center Panel - Story */
+        .center-panel {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid rgba(212, 175, 55, 0.15);
+            border-right: none;
+            padding: 0;
+        }
+
+        /* Scene Header */
+        .scene-header {
+            padding: 12px 20px;
+            background: linear-gradient(180deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 8, 0.9));
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            text-align: center;
+        }
+
+        .scene-location {
+            color: var(--primary-gold);
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .scene-location::before,
+        .scene-location::after {
+            content: '◆';
+            font-size: 0.6rem;
+            opacity: 0.5;
+        }
+
+        /* Story Log */
+        .story-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: 
+                linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.2) 100%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 29px,
+                    rgba(212, 175, 55, 0.03) 30px
+                );
+        }
+
+        .story-entry {
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--primary-gold);
+            border-radius: 0 8px 8px 0;
+            animation: fadeInEntry 0.5s ease;
+        }
+
+        @keyframes fadeInEntry {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .story-entry .timestamp {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .story-entry .content {
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.9;
+            letter-spacing: 0.5px;
+        }
+
+        .story-entry .content .dialogue {
+            color: var(--primary-gold);
+        }
+
+        .story-entry .content .action {
+            color: var(--magic-blue);
+            font-style: italic;
+        }
+
+        .story-entry.system {
+            border-left-color: var(--magic-blue);
+            background: rgba(0, 100, 150, 0.1);
+        }
+
+        .story-entry.combat {
+            border-left-color: var(--danger-red);
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .story-entry.player-action {
+            border-left-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 15px 20px;
+            background: linear-gradient(180deg, rgba(5, 5, 8, 0.95), rgba(13, 13, 20, 0.98));
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            resize: none;
+            min-height: 50px;
+            max-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: rgba(138, 138, 154, 0.5);
+            font-style: italic;
+        }
+
+        .input-field.warning {
+            border-color: var(--danger-red);
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .submit-btn {
+            padding: 14px 30px;
+            background: linear-gradient(135deg, var(--primary-gold), #8b6914);
+            border: none;
+            border-radius: 6px;
+            color: var(--dark-bg);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Right Panel - Intel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* War Status */
+        .war-status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .war-status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .war-status-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.3);
+        }
+
+        .war-status-item.player {
+            border-color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .war-status-item.dead {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .class-icon-small {
+            width: 24px;
+            height: 24px;
+            opacity: 0.8;
+        }
+
+        .war-status-item.dead .class-icon-small {
+            filter: grayscale(100%);
+        }
+
+        .class-info {
+            flex: 1;
+        }
+
+        .class-name-label {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .true-name-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+
+        .true-name-label.unknown {
+            color: rgba(138, 138, 154, 0.6);
+            font-style: italic;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--hp-green);
+        }
+
+        .status-indicator.dead {
+            background: var(--danger-red);
+        }
+
+        .status-indicator.unknown {
+            background: var(--text-secondary);
+        }
+
+        /* Intel Notes */
+        .intel-notes {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .intel-item {
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid var(--magic-blue);
+            margin-bottom: 8px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .intel-item.important {
+            border-left-color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .intel-item .intel-time {
+            font-size: 0.7rem;
+            color: rgba(138, 138, 154, 0.6);
+            margin-bottom: 4px;
+        }
+
+        /* Objectives */
+        .objective-item {
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .objective-title {
+            color: var(--primary-gold);
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .objective-desc {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        /* Mini Map */
+        .mini-map {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .map-title {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Graph Map Container */
+        .map-graph-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: linear-gradient(180deg, rgba(0, 10, 30, 0.6) 0%, rgba(0, 0, 0, 0.8) 100%);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #mapCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            font-size: 0.65rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.high-mana { background: #8a2be2; }
+        .legend-dot.medium-mana { background: #4169e1; }
+        .legend-dot.low-mana { background: #2e8b57; }
+        .legend-dot.current { background: var(--primary-gold); box-shadow: 0 0 6px var(--primary-gold); }
+        .legend-dot.servant-present { background: #ffa500; box-shadow: 0 0 4px #ffa500; }
+        .legend-dot.danger-zone { background: #ff4444; box-shadow: 0 0 4px #ff4444; }
+
+        /* Location Detail Modal */
+        .location-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .location-modal.active {
+            display: flex;
+        }
+
+        .location-modal-content {
+            background: linear-gradient(145deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 15, 0.99));
+            border: 2px solid var(--primary-gold);
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 450px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .location-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .location-modal-title {
+            color: var(--primary-gold);
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+        }
+
+        .location-modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .location-modal-close {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .location-modal-close:hover {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .location-modal-desc {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--primary-gold);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .location-modal-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .location-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 6px;
+        }
+
+        .location-stat-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .location-stat-value {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .location-stat-value.high { color: #8a2be2; }
+        .location-stat-value.medium { color: #4169e1; }
+        .location-stat-value.low { color: #2e8b57; }
+
+        .mana-bar-container {
+            grid-column: span 2;
+        }
+
+        .mana-density-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .mana-density-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2e8b57, #4169e1, #8a2be2);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .location-connections {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .location-connections-title {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .connection-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .connection-tag {
+            padding: 4px 10px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .connection-tag:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--primary-gold);
+        }
+
+        .location-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .location-modal-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .location-modal-btn.primary {
+            background: linear-gradient(135deg, var(--primary-gold), #8b6914);
+            border: none;
+            color: var(--dark-bg);
+            font-weight: bold;
+        }
+
+        .location-modal-btn.primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .location-modal-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .location-modal-btn.secondary:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        /* Location Servants Styles */
+        .location-servants-section {
+            margin-bottom: 20px;
+        }
+
+        .location-servants-title {
+            color: var(--primary-gold);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .location-servants-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .location-servants-empty {
+            text-align: center;
+            padding: 10px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .location-servant-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .location-servant-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .location-servant-item.player {
+            border-color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .location-servant-item.npc {
+            border-color: rgba(255, 165, 0, 0.5);
+            background: rgba(255, 165, 0, 0.08);
+        }
+
+        .location-servant-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.9;
+        }
+
+        .location-servant-info {
+            flex: 1;
+        }
+
+        .location-servant-class {
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .location-servant-master {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            margin-top: 2px;
+        }
+
+        .location-servant-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+        }
+
+        .location-servant-badge.player-badge {
+            background: rgba(212, 175, 55, 0.3);
+            color: var(--primary-gold);
+            border: 1px solid var(--primary-gold);
+        }
+
+        .location-servant-badge.npc-badge {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            border: 1px solid #ffa500;
+        }
+
+        /* Location History Styles */
+        .location-history-section {
+            margin-bottom: 20px;
+        }
+
+        .location-history-title {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .location-history-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .location-history-empty {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .location-history-entry {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid var(--text-secondary);
+            margin-bottom: 8px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.8rem;
+        }
+
+        .location-history-entry.detailed {
+            border-left-color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        .location-history-entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-entry-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .history-entry-turn {
+            color: var(--primary-gold);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+
+        .history-entry-content {
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-size: 0.8rem;
+        }
+
+        .history-entry-chars {
+            margin-top: 6px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Noble Phantasm Overlay */
+        .np-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .np-overlay.active {
+            display: flex;
+            animation: npFadeIn 0.5s ease;
+        }
+
+        @keyframes npFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .np-cut-in {
+            position: relative;
+            max-width: 80%;
+            max-height: 60vh;
+            animation: npSlideIn 0.8s ease;
+        }
+
+        @keyframes npSlideIn {
+            from { 
+                transform: translateX(-100%) scale(0.8);
+                opacity: 0;
+            }
+            to { 
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .np-cut-in img {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            filter: drop-shadow(0 0 50px var(--primary-gold));
+        }
+
+        .np-name-display {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .np-name {
+            font-size: 2.5rem;
+            color: var(--secondary-gold);
+            letter-spacing: 6px;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            animation: npTextGlow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes npTextGlow {
+            from { text-shadow: 0 0 30px rgba(255, 215, 0, 0.8); }
+            to { text-shadow: 0 0 50px rgba(255, 215, 0, 1), 0 0 80px rgba(255, 215, 0, 0.5); }
+        }
+
+        .np-ruby {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        /* Command Spell Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 15, 0.99));
+            border: 2px solid var(--blood-red);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-title {
+            color: var(--blood-red);
+            font-size: 1.3rem;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+
+        .modal-text {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.8;
+            margin-bottom: 25px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, var(--blood-red), #5a0000);
+            border: none;
+            color: var(--text-primary);
+        }
+
+        .modal-btn.confirm:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.5);
+        }
+
+        .modal-btn.cancel {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .modal-btn.cancel:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        /* History Modal */
+        .history-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .history-modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: linear-gradient(180deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 8, 0.95));
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .history-title {
+            color: var(--primary-gold);
+            font-size: 1.3rem;
+            letter-spacing: 3px;
+        }
+
+        .history-close {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-close:hover {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .history-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .history-entry {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--primary-gold);
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 15px;
+        }
+
+        .history-entry .entry-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .history-entry .entry-content {
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 2000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 3px solid rgba(212, 175, 55, 0.2);
+            border-top-color: var(--primary-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--primary-gold);
+            font-size: 1.1rem;
+            margin-top: 20px;
+            letter-spacing: 2px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .main-content {
+                grid-template-columns: 250px 1fr 340px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 250px 1fr 300px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .left-panel, .right-panel {
+                display: none;
+            }
+            
+            .center-panel {
+                border: none;
+            }
+        }
+
+        /* Debug Modal Styles */
+        .debug-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 3000;
+            overflow: hidden;
+        }
+
+        .debug-modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .debug-modal-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .debug-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: linear-gradient(180deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 8, 0.95));
+            border-bottom: 2px solid #00ff00;
+        }
+
+        .debug-modal-title {
+            color: #00ff00;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .debug-modal-close {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            color: #00ff00;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .debug-modal-close:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        .debug-modal-tabs {
+            display: flex;
+            gap: 5px;
+            padding: 10px 25px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            flex-wrap: wrap;
+        }
+
+        .debug-tab {
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            color: #00ff00;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .debug-tab:hover {
+            background: rgba(0, 255, 0, 0.15);
+            border-color: #00ff00;
+        }
+
+        .debug-tab.active {
+            background: rgba(0, 255, 0, 0.25);
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .debug-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 25px;
+            background: rgba(0, 10, 0, 0.3);
+        }
+
+        .debug-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .debug-section-title {
+            color: #00ff00;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .debug-json {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #00ff88;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.6;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .debug-json .key {
+            color: #ff6b6b;
+        }
+
+        .debug-json .string {
+            color: #98c379;
+        }
+
+        .debug-json .number {
+            color: #d19a66;
+        }
+
+        .debug-json .boolean {
+            color: #56b6c2;
+        }
+
+        .debug-json .null {
+            color: #abb2bf;
+        }
+
+        .debug-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+        }
+
+        .debug-table th,
+        .debug-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid rgba(0, 255, 0, 0.2);
+        }
+
+        .debug-table th {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+        }
+
+        .debug-table td {
+            color: #00ff88;
+        }
+
+        .debug-table tr:hover {
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .debug-empty {
+            color: rgba(0, 255, 0, 0.5);
+            font-style: italic;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .debug-copy-btn {
+            padding: 6px 12px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            color: #00ff00;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            float: right;
+            margin-bottom: 8px;
+        }
+
+        .debug-copy-btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        /* Servant Detail Modal Styles */
+        .servant-detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .servant-detail-modal.active {
+            display: flex;
+        }
+
+        .servant-detail-content {
+            background: linear-gradient(145deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 15, 0.99));
+            border: 2px solid var(--primary-gold);
+            border-radius: 12px;
+            padding: 0;
+            max-width: 400px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease;
+            overflow: hidden;
+        }
+
+        .servant-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(139, 0, 0, 0.1));
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .servant-detail-class-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--primary-gold);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .servant-detail-class-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .servant-detail-titles {
+            flex: 1;
+        }
+
+        .servant-detail-class {
+            color: var(--primary-gold);
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .servant-detail-name {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .servant-detail-name.revealed {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+
+        .servant-detail-close {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .servant-detail-close:hover {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .servant-detail-body {
+            padding: 20px;
+        }
+
+        .servant-detail-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .servant-detail-status.alive {
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+
+        .servant-detail-status.dead {
+            background: rgba(204, 68, 68, 0.15);
+            border: 1px solid rgba(204, 68, 68, 0.4);
+        }
+
+        .servant-detail-status.unknown {
+            background: rgba(138, 138, 154, 0.15);
+            border: 1px solid rgba(138, 138, 154, 0.4);
+        }
+
+        .servant-detail-status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .servant-detail-status.alive .servant-detail-status-dot {
+            background: var(--hp-green);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+        }
+
+        .servant-detail-status.dead .servant-detail-status-dot {
+            background: var(--danger-red);
+        }
+
+        .servant-detail-status.unknown .servant-detail-status-dot {
+            background: var(--text-secondary);
+        }
+
+        .servant-detail-status-text {
+            font-size: 0.9rem;
+        }
+
+        .servant-detail-status.alive .servant-detail-status-text {
+            color: var(--hp-green);
+        }
+
+        .servant-detail-status.dead .servant-detail-status-text {
+            color: var(--danger-red);
+        }
+
+        .servant-detail-status.unknown .servant-detail-status-text {
+            color: var(--text-secondary);
+        }
+
+        .servant-detail-section {
+            margin-bottom: 15px;
+        }
+
+        .servant-detail-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .servant-detail-section-title {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .servant-detail-master {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border-left: 3px solid var(--primary-gold);
+        }
+
+        .servant-detail-location {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border-left: 3px solid var(--magic-blue);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .servant-detail-location:hover {
+            background: rgba(0, 191, 255, 0.1);
+        }
+
+        .servant-detail-location.unknown {
+            color: var(--text-secondary);
+            font-style: italic;
+            cursor: default;
+        }
+
+        .servant-detail-location.unknown:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .servant-detail-intel {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .servant-detail-intel-empty {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-style: italic;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .servant-detail-intel-item {
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid var(--magic-blue);
+            margin-bottom: 6px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .servant-detail-intel-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .servant-detail-parameters {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .servant-detail-param {
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .servant-detail-param-label {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+        }
+
+        .servant-detail-param-value {
+            color: var(--primary-gold);
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        /* Make war status items clickable */
+        .war-status-item {
+            cursor: pointer;
+        }
+
+        .war-status-item:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: rgba(212, 175, 55, 0.4);
+            transform: translateX(3px);
+        }
+
+        /* Path Confirmation Modal Styles */
+        .path-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+        }
+
+        .path-confirm-modal.active {
+            display: flex;
+        }
+
+        .path-confirm-content {
+            background: linear-gradient(145deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 15, 0.99));
+            border: 2px solid var(--magic-blue);
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 450px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .path-confirm-title {
+            color: var(--magic-blue);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .path-confirm-text {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .path-confirm-path {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .path-node {
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .path-node.current {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.15);
+        }
+
+        .path-node.next {
+            border-color: var(--hp-green);
+            color: var(--hp-green);
+            background: rgba(76, 175, 80, 0.15);
+            font-weight: bold;
+        }
+
+        .path-node.destination {
+            border-color: var(--magic-blue);
+            color: var(--magic-blue);
+            background: rgba(0, 191, 255, 0.15);
+        }
+
+        .path-arrow {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .path-confirm-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .path-confirm-btn {
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        .path-confirm-btn.confirm {
+            background: linear-gradient(135deg, var(--hp-green), #2e7d32);
+            border: none;
+            color: var(--text-primary);
+        }
+
+        .path-confirm-btn.confirm:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+        }
+
+        .path-confirm-btn.cancel {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .path-confirm-btn.cancel:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">连接冬木市...</div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div class="game-container" id="gameContainer" style="display: none;">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="header-left">
+                <button class="header-btn" onclick="openSettings()">⚙ 设置</button>
+                <button class="header-btn" onclick="openHistory()">📜 历史记录</button>
+                <button class="header-btn" onclick="saveGame()">💾 保存</button>
+            </div>
+            <div class="header-right">
+                <div class="time-display">
+                    <span class="day-counter" id="dayCounter">第1天</span>
+                    <span class="time-phase night" id="timePhase">深夜</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Status -->
+            <div class="panel left-panel">
+                <!-- Master Status -->
+                <div class="panel-section">
+                    <div class="panel-title">御主状态</div>
+                    <div class="master-status">
+                        <div class="master-header">
+                            <div class="master-avatar">👤</div>
+                            <div class="master-info">
+                                <div class="master-name" id="masterName">御主</div>
+                                <div class="master-title" id="masterTitle">魔术师</div>
+                            </div>
+                        </div>
+                        
+                        <div class="command-spell-label">令咒</div>
+                        <div class="command-spells" id="commandSpells">
+                            <div class="command-spell active" onclick="useCommandSpell(0)"></div>
+                            <div class="command-spell active" onclick="useCommandSpell(1)"></div>
+                            <div class="command-spell active" onclick="useCommandSpell(2)"></div>
+                        </div>
+                        
+                        <div class="status-bar-container">
+                            <div class="status-bar-label">
+                                <span>魔力</span>
+                                <span id="manaValue">100/100</span>
+                            </div>
+                            <div class="status-bar">
+                                <div class="status-bar-fill mana" id="manaBar" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="physical-status">
+                            <span class="physical-status-label">身体状态：</span>
+                            <span class="physical-status-value" id="physicalStatus">健康</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Servant Status -->
+                <div class="panel-section">
+                    <div class="panel-title">从者状态</div>
+                    <div class="servant-status">
+                        <div class="servant-portrait-container">
+                            <img class="servant-portrait" id="servantPortrait" src="" alt="Servant">
+                            <div class="servant-class-badge">
+                                <img id="servantClassIcon" src="class_image/saber.png" alt="Class">
+                                <span id="servantClassLabel">Saber</span>
+                            </div>
+                        </div>
+                        
+                        <div class="servant-name-display">
+                            <div class="main-name" id="servantMainName">???</div>
+                            <div class="sub-name" id="servantSubName"></div>
+                        </div>
+                        
+                        <div class="radar-chart-container">
+                            <canvas id="servantRadarChart" width="200" height="200"></canvas>
+                        </div>
+                        
+                        <div class="combat-stats">
+                            <div class="status-bar-container">
+                                <div class="status-bar-label">
+                                    <span>HP</span>
+                                    <span id="hpValue">15000/15000</span>
+                                </div>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill hp" id="hpBar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="status-bar-container">
+                                <div class="status-bar-label">
+                                    <span>NP</span>
+                                    <span id="npValue">0%</span>
+                                </div>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill np" id="npBar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bond-level">
+                            <span class="bond-label">羁绊：</span>
+                            <div class="bond-hearts" id="bondHearts">
+                                <span class="bond-heart filled">❤️</span>
+                                <span class="bond-heart">🤍</span>
+                                <span class="bond-heart">🤍</span>
+                                <span class="bond-heart">🤍</span>
+                                <span class="bond-heart">🤍</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory -->
+                <div class="panel-section">
+                    <div class="panel-title">持有物品</div>
+                    <div class="inventory-grid" id="inventoryGrid">
+                        <div class="inventory-slot">💎</div>
+                        <div class="inventory-slot">📱</div>
+                        <div class="inventory-slot">💰</div>
+                        <div class="inventory-slot empty"></div>
+                        <div class="inventory-slot empty"></div>
+                        <div class="inventory-slot empty"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Story -->
+            <div class="panel center-panel">
+                <div class="scene-header">
+                    <div class="scene-location" id="sceneLocation">远坂邸</div>
+                </div>
+                
+                <div class="story-log" id="storyLog">
+                    <!-- Story entries will be added here -->
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="quickAction('查看周围')">👁 查看周围</button>
+                    <button class="quick-action-btn" onclick="quickAction('灵体化')">👻 灵体化</button>
+                    <button class="quick-action-btn" onclick="quickAction('休息')">💤 休息</button>
+                    <button class="quick-action-btn" onclick="quickAction('状态检查')">📊 状态检查</button>
+                </div>
+                
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <textarea class="input-field" id="actionInput" placeholder="请输入行动..." rows="1"></textarea>
+                        <button class="submit-btn" id="submitBtn" onclick="submitAction()">发送</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Intel -->
+            <div class="panel right-panel">
+                <!-- War Status -->
+                <div class="panel-section">
+                    <div class="panel-title">职阶状态</div>
+                    <div class="war-status-list" id="warStatusList">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Current Objective -->
+                <div class="panel-section">
+                    <div class="panel-title">当前目标</div>
+                    <div class="objective-item">
+                        <div class="objective-title" id="currentObjective">与从者建立契约</div>
+                        <div class="objective-desc" id="objectiveDesc">完成召唤仪式后，与召唤的从者进行交流，建立信任关系。</div>
+                    </div>
+                </div>
+
+                <!-- Intel Notes -->
+                <div class="panel-section">
+                    <div class="panel-title">情报笔记</div>
+                    <div class="intel-notes" id="intelNotes">
+                        <div class="intel-item">
+                            <div class="intel-time">刚才</div>
+                            成功召唤从者，圣杯战争正式开始。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Map -->
+                <div class="panel-section">
+                    <div class="panel-title">冬木市地图</div>
+                    <div class="mini-map">
+                        <div class="map-title">【 点击地点查看详情 】</div>
+                        <div class="map-graph-container">
+                            <canvas id="mapCanvas"></canvas>
+                        </div>
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <div class="legend-dot current"></div>
+                                    <span>当前位置</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot servant-present"></div>
+                                    <span>有从者</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot danger-zone"></div>
+                                    <span>多从者</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot high-mana"></div>
+                                    <span>高魔力</span>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Spell Modal -->
+    <div class="modal-overlay" id="commandSpellModal">
+        <div class="modal-content">
+            <div class="modal-title">⟐ 令咒发动 ⟐</div>
+            <div class="modal-text">
+                是否消耗<span style="color: var(--blood-red);">一画令咒</span>强制执行命令？<br><br>
+                <span style="font-size: 0.85rem; color: rgba(138, 138, 154, 0.7);">
+                    令咒是对从者的绝对命令，一旦消耗将无法恢复。
+                </span>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" onclick="confirmCommandSpell()">发动</button>
+                <button class="modal-btn cancel" onclick="cancelCommandSpell()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Noble Phantasm Overlay -->
+    <div class="np-overlay" id="npOverlay">
+        <div class="np-cut-in">
+            <img id="npImage" src="" alt="Noble Phantasm">
+        </div>
+        <div class="np-name-display">
+            <div class="np-name" id="npName"></div>
+            <div class="np-ruby" id="npRuby"></div>
+        </div>
+    </div>
+
+    <!-- Location Detail Modal -->
+    <div class="location-modal" id="locationModal">
+        <div class="location-modal-content">
+            <div class="location-modal-header">
+                <div>
+                    <div class="location-modal-title" id="locationModalTitle">柳洞寺</div>
+                    <div class="location-modal-subtitle" id="locationModalSubtitle">Ryuudou Temple</div>
+                </div>
+                <button class="location-modal-close" onclick="closeLocationModal()">✕</button>
+            </div>
+            <div class="location-modal-desc" id="locationModalDesc">
+                位于圆藏山顶的古老寺庙，拥有足以压制从者的强力结界。
+            </div>
+            <div class="location-modal-stats">
+                <div class="location-stat">
+                    <span class="location-stat-label">战术类型</span>
+                    <span class="location-stat-value" id="locationModalType">Fortress</span>
+                </div>
+                <div class="location-stat">
+                    <span class="location-stat-label">人口密度</span>
+                    <span class="location-stat-value" id="locationModalPopulation">Low</span>
+                </div>
+                <div class="location-stat mana-bar-container">
+                    <span class="location-stat-label">魔力浓度 <span id="locationModalManaValue">5/5</span></span>
+                    <div class="mana-density-bar">
+                        <div class="mana-density-fill" id="locationModalManaBar" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="location-connections">
+                <div class="location-connections-title">邻接地点</div>
+                <div class="connection-tags" id="locationModalConnections">
+                    <!-- Connection tags will be added dynamically -->
+                </div>
+            </div>
+            <div class="location-servants-section" id="locationServantsSection">
+                <div class="location-servants-title">📍 当前从者</div>
+                <div class="location-servants-container" id="locationServantsContainer">
+                    <div class="location-servants-empty">此地点暂无从者...</div>
+                </div>
+            </div>
+            <div class="location-history-section">
+                <div class="location-history-title">📜 历史记录</div>
+                <div class="location-history-container" id="locationHistoryContainer">
+                    <div class="location-history-empty">暂无历史记录...</div>
+                </div>
+            </div>
+            <div class="location-modal-actions">
+                <button class="location-modal-btn primary" id="locationModalMoveBtn" onclick="moveToSelectedLocation()">前往此地</button>
+                <button class="location-modal-btn secondary" onclick="closeLocationModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="history-modal" id="historyModal">
+        <div class="history-header">
+            <div class="history-title">📜 历史记录</div>
+            <button class="history-close" onclick="closeHistory()">✕ 关闭</button>
+        </div>
+        <div class="history-content" id="historyContent">
+            <!-- History entries will be added here -->
+        </div>
+    </div>
+
+    <!-- Path Confirmation Modal -->
+    <div class="path-confirm-modal" id="pathConfirmModal">
+        <div class="path-confirm-content">
+            <div class="path-confirm-title">⚠ 路径规划</div>
+            <div class="path-confirm-text" id="pathConfirmText">
+                <!-- Text will be set dynamically -->
+            </div>
+            <div class="path-confirm-path" id="pathConfirmPath">
+                <!-- Path visualization will be added here -->
+            </div>
+            <div class="path-confirm-buttons">
+                <button class="path-confirm-btn confirm" id="pathConfirmBtn">前往</button>
+                <button class="path-confirm-btn cancel" onclick="cancelPathConfirm()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Servant Detail Modal -->
+    <div class="servant-detail-modal" id="servantDetailModal">
+        <div class="servant-detail-content">
+            <div class="servant-detail-header">
+                <div class="servant-detail-class-icon">
+                    <img id="servantDetailClassIcon" src="class_image/saber.png" alt="Class">
+                </div>
+                <div class="servant-detail-titles">
+                    <div class="servant-detail-class" id="servantDetailClass">Saber</div>
+                    <div class="servant-detail-name" id="servantDetailName">???</div>
+                </div>
+                <button class="servant-detail-close" onclick="closeServantDetailModal()">✕</button>
+            </div>
+            <div class="servant-detail-body">
+                <div class="servant-detail-status" id="servantDetailStatus">
+                    <!-- Status indicator -->
+                </div>
+                <div class="servant-detail-section">
+                    <div class="servant-detail-section-title">御主信息</div>
+                    <div class="servant-detail-master" id="servantDetailMaster">未知</div>
+                </div>
+                <div class="servant-detail-section">
+                    <div class="servant-detail-section-title">当前位置</div>
+                    <div class="servant-detail-location" id="servantDetailLocation">未知</div>
+                </div>
+                <div class="servant-detail-section">
+                    <div class="servant-detail-section-title">已知情报</div>
+                    <div class="servant-detail-intel" id="servantDetailIntel">
+                        <div class="servant-detail-intel-empty">暂无收集到的情报...</div>
+                    </div>
+                </div>
+                <div class="servant-detail-section" id="servantDetailParametersSection" style="display: none;">
+                    <div class="servant-detail-section-title">能力参数</div>
+                    <div class="servant-detail-parameters" id="servantDetailParameters">
+                        <!-- Parameters will be shown if known -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info Modal -->
+    <div class="debug-modal" id="debugModal">
+        <div class="debug-modal-content">
+            <div class="debug-modal-header">
+                <div class="debug-modal-title">🔧 Debug 信息面板</div>
+                <button class="debug-modal-close" onclick="closeDebugModal()">✕</button>
+            </div>
+            <div class="debug-modal-tabs">
+                <button class="debug-tab active" onclick="switchDebugTab('gameState')">游戏状态</button>
+                <button class="debug-tab" onclick="switchDebugTab('map')">地图数据</button>
+                <button class="debug-tab" onclick="switchDebugTab('history')">历史记录</button>
+            </div>
+            <div class="debug-modal-body" id="debugModalBody">
+                <!-- Debug content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ CONFIGURATION ============
+        // Class icons mapping
+        const classIcons = {
+            'Saber': 'class_image/saber.png',
+            'Archer': 'class_image/acher.png',
+            'Lancer': 'class_image/lancer.png',
+            'Rider': 'class_image/rider.png',
+            'Caster': 'class_image/caster.png',
+            'Assassin': 'class_image/assassin.png',
+            'Berserker': 'class_image/berserker.png',
+            'Ruler': 'class_image/ruler.png',
+            'Avenger': 'class_image/avenger.png'
+        };
+
+        const STANDARD_CLASSES = ['Saber', 'Archer', 'Lancer', 'Rider', 'Caster', 'Assassin', 'Berserker'];
+
+        // ============ FUYUKI CITY MAP DATA ============
+        const fuyukiMapData = {
+            // 深山町 (Miyama Town - Old Town, West Side)
+            "miyama_crossroads": {
+                id: "miyama_crossroads",
+                name: "深山町十字路口",
+                englishName: "Miyama Crossroads",
+                description: "交通枢纽，通往老城区各地。作为深山町的中心地带，这里是多条道路的交汇点。",
+                mana_density: 2,
+                population: "High",
+                tactical_type: "Hub",
+                connections: ["emiya_residence", "tohsaka_residence", "shopping_district", "homurahara_academy"],
+                region: "miyama"
+            },
+            "emiya_residence": {
+                id: "emiya_residence",
+                name: "卫宫宅邸",
+                englishName: "Emiya Residence",
+                description: "典型的日式大宅，仓库中有召唤阵。易守难攻的据点，曾是第四次圣杯战争的御主卫宫切嗣的住所。",
+                mana_density: 3,
+                population: "Low",
+                tactical_type: "Fortress",
+                connections: ["miyama_crossroads"],
+                region: "miyama"
+            },
+            "tohsaka_residence": {
+                id: "tohsaka_residence",
+                name: "远坂宅邸",
+                englishName: "Tohsaka Residence",
+                description: "位于高处的洋馆，也是灵脉的节点之一。远坂家世代经营的魔术工房，拥有强力的防御结界。",
+                mana_density: 4,
+                population: "Low",
+                tactical_type: "Fortress",
+                connections: ["miyama_crossroads"],
+                region: "miyama"
+            },
+            "homurahara_academy": {
+                id: "homurahara_academy",
+                name: "穗群原学园",
+                englishName: "Homurahara Academy",
+                description: "主角们的学校，白天人多眼杂，夜晚有Ghost Liner传说。学园内存在若干灵异现象。",
+                mana_density: 2,
+                population: "High/Day, Low/Night",
+                tactical_type: "Complex",
+                connections: ["miyama_crossroads", "mountain_path"],
+                region: "miyama"
+            },
+            "shopping_district": {
+                id: "shopping_district",
+                name: "商店街",
+                englishName: "Shopping District",
+                description: "充满生活气息的街道，很难在这里进行大规模战斗。平民往来频繁，是维持日常的重要场所。",
+                mana_density: 1,
+                population: "High",
+                tactical_type: "Urban",
+                connections: ["miyama_crossroads", "fuyuki_bridge"],
+                region: "miyama"
+            },
+            "mountain_path": {
+                id: "mountain_path",
+                name: "圆藏山脚",
+                englishName: "Mountain Path",
+                description: "通往柳洞寺的长台阶，Assassin职阶最喜欢的「守门」地点。狭窄的通道使其成为天然的隘口。",
+                mana_density: 3,
+                population: "Low",
+                tactical_type: "Chokepoint",
+                connections: ["homurahara_academy", "ryuudou_temple"],
+                region: "miyama"
+            },
+            "ryuudou_temple": {
+                id: "ryuudou_temple",
+                name: "柳洞寺",
+                englishName: "Ryuudou Temple",
+                description: "位于圆藏山顶的古老寺庙，拥有足以压制从者的强力结界。灵脉的核心所在，是Caster职阶的天堂。",
+                mana_density: 5,
+                population: "Low",
+                tactical_type: "Fortress",
+                connections: ["mountain_path", "einzbern_forest"],
+                region: "miyama"
+            },
+            "einzbern_forest": {
+                id: "einzbern_forest",
+                name: "爱因兹贝伦森林",
+                englishName: "Einzbern Forest",
+                description: "城郊的神秘森林，通往爱因兹贝伦城堡。森林中布满了结界和陷阱，贸然进入极其危险。",
+                mana_density: 4,
+                population: "None",
+                tactical_type: "Fortress",
+                connections: ["ryuudou_temple"],
+                region: "outskirts"
+            },
+            
+            // 连接点 (Bridge)
+            "fuyuki_bridge": {
+                id: "fuyuki_bridge",
+                name: "冬木大桥",
+                englishName: "Fuyuki Bridge",
+                description: "连接新旧两都的唯一陆路通道，开阔，无遮挡，适合决斗或狙击。桥上的战斗往往是最激烈的。",
+                mana_density: 3,
+                population: "Medium",
+                tactical_type: "Bridge",
+                connections: ["shopping_district", "riverside_park"],
+                region: "bridge"
+            },
+            
+            // 新都 (Shinto - New Town, East Side)
+            "riverside_park": {
+                id: "riverside_park",
+                name: "临海公园",
+                englishName: "Riverside Park",
+                description: "位于河边的开阔绿地，夜晚是经典的遭遇战地点。视野开阔，适合从者之间的正面对决。",
+                mana_density: 2,
+                population: "Medium",
+                tactical_type: "Open",
+                connections: ["fuyuki_bridge", "shinto_center"],
+                region: "shinto"
+            },
+            "shinto_center": {
+                id: "shinto_center",
+                name: "新都中心",
+                englishName: "Shinto Center",
+                description: "繁华的商业中心，也是去往各处的必经之地。高楼林立，现代都市的象征。",
+                mana_density: 2,
+                population: "High",
+                tactical_type: "Urban",
+                connections: ["riverside_park", "center_building", "fuyuki_church", "fuyuki_harbor"],
+                region: "shinto"
+            },
+            "center_building": {
+                id: "center_building",
+                name: "凯悦酒店",
+                englishName: "Center Building",
+                description: "冬木市最高的建筑，适合Archer职阶进行超远程侦查或狙击。视野可覆盖整个冬木市。",
+                mana_density: 2,
+                population: "High",
+                tactical_type: "Vantage Point",
+                connections: ["shinto_center"],
+                region: "shinto"
+            },
+            "fuyuki_church": {
+                id: "fuyuki_church",
+                name: "冬木教会",
+                englishName: "Fuyuki Church",
+                description: "中立地带（名义上），监督者的所在地，存放灵器的地方。退出战争的御主可在此获得庇护。",
+                mana_density: 4,
+                population: "Low",
+                tactical_type: "Sanctuary",
+                connections: ["shinto_center"],
+                region: "shinto"
+            },
+            "fuyuki_harbor": {
+                id: "fuyuki_harbor",
+                name: "冬木港",
+                englishName: "Fuyuki Harbor",
+                description: "集装箱堆放地，经典的「仓库街」，极其适合放开手脚战斗。第四次圣杯战争的最终决战地。",
+                mana_density: 2,
+                population: "Low/Night",
+                tactical_type: "Industrial",
+                connections: ["shinto_center"],
+                region: "shinto"
+            }
+        };
+
+        // Legacy location names mapping (for backward compatibility)
+        const locationNames = {
+            'tohsaka_manor': '远坂宅邸',
+            'tohsaka_residence': '远坂宅邸',
+            'fuyuki_bridge': '冬木大桥',
+            'shinto': '新都中心',
+            'shinto_center': '新都中心',
+            'ryuudou_temple': '柳洞寺',
+            'church': '冬木教会',
+            'fuyuki_church': '冬木教会',
+            'harbor': '冬木港',
+            'fuyuki_harbor': '冬木港',
+            'emiya_residence': '卫宫宅邸',
+            'einzbern_forest': '爱因兹贝伦森林',
+            'miyama_crossroads': '深山町十字路口',
+            'homurahara_academy': '穗群原学园',
+            'shopping_district': '商店街',
+            'mountain_path': '圆藏山脚',
+            'riverside_park': '临海公园',
+            'center_building': '凯悦酒店'
+        };
+
+        const timePhaseNames = {
+            'dawn': '黎明',
+            'day': '白天',
+            'dusk': '黄昏',
+            'night': '深夜'
+        };
+
+        // ============ GAME STATE ============
+        let gameState = {
+            gameId: null,
+            day: 1,
+            timePhase: 'night',
+            turnCount: 1,
+            location: 'tohsaka_residence',
+            master: {
+                name: '御主',
+                title: '魔术师',
+                mana: 100,
+                maxMana: 100,
+                commandSpells: 3,
+                physicalStatus: 'healthy'
+            },
+            servant: {
+                class: 'Saber',
+                trueName: '???',
+                englishName: '',
+                hp: 15000,
+                maxHp: 15000,
+                np: 0,
+                bondLevel: 1,
+                parameters: {
+                    strength: 'C',
+                    endurance: 'C',
+                    agility: 'C',
+                    mana: 'C',
+                    luck: 'C',
+                    np: 'C'
+                },
+                imagePath: '',
+                availableImages: []
+            },
+            warStatus: {},
+            storyHistory: [],
+            intel: [],
+            objective: '与从者建立契约',
+            objectiveDesc: '完成召唤仪式后，与召唤的从者进行交流，建立信任关系。',
+            inventory: ['💎', '📱', '💰']
+        };
+
+        // God View - 完整的游戏状态（包含所有NPC信息）
+        // 从 init_game 返回的数据初始化，用于发送给后端
+        let godView = null;
+
+        // API Base URL
+        const API_BASE_URL = 'http://localhost:5000';
+
+        // ============ CHARACTER SYSTEM ============
+        // 所有角色（御主+从者组合）的状态
+        let characters = {
+            // 玩家角色 - 会在初始化时设置
+            'player': {
+                id: 'player',
+                type: 'player',
+                masterName: '御主',
+                servantClass: 'Saber',
+                servantName: '???',
+                location: 'tohsaka_residence',
+                isAlive: true,
+                // 意图系统 - 递归 todolist 结构
+                intents: [
+                    {
+                        id: 'intent_1',
+                        goal: '在圣杯战争中存活',
+                        priority: 1, // 1-5, 1最高
+                        status: 'active', // active, completed, abandoned
+                        subIntents: [
+                            {
+                                id: 'intent_1_1',
+                                goal: '与从者建立信任',
+                                priority: 2,
+                                status: 'active',
+                                subIntents: []
+                            },
+                            {
+                                id: 'intent_1_2',
+                                goal: '收集其他从者的情报',
+                                priority: 2,
+                                status: 'active',
+                                subIntents: []
+                            }
+                        ]
+                    }
+                ],
+                // 记忆系统 - 关键信息记录
+                memories: [
+                    {
+                        turn: 1,
+                        content: '成功召唤从者，圣杯战争开始。',
+                        importance: 'high' // high, medium, low
+                    }
+                ]
+            }
+        };
+
+        // NPC 角色模板 - 圣杯战争的其他参战者
+        const npcTemplates = {
+            'archer_team': {
+                id: 'archer_team',
+                type: 'npc',
+                masterName: '远坂凛',
+                servantClass: 'Archer',
+                servantName: '???',
+                personality: '傲慢但有原则，追求效率',
+                initialLocation: 'tohsaka_residence',
+                intents: [
+                    {
+                        id: 'archer_intent_1',
+                        goal: '赢得圣杯战争',
+                        priority: 1,
+                        status: 'active',
+                        subIntents: [
+                            {
+                                id: 'archer_intent_1_1',
+                                goal: '侦察其他从者的真名',
+                                priority: 2,
+                                status: 'active',
+                                subIntents: []
+                            }
+                        ]
+                    }
+                ]
+            },
+            'lancer_team': {
+                id: 'lancer_team',
+                type: 'npc',
+                masterName: '言峰绮礼',
+                servantClass: 'Lancer',
+                servantName: '???',
+                personality: '好战且讲究荣誉，渴望与强者战斗',
+                initialLocation: 'fuyuki_church',
+                intents: [
+                    {
+                        id: 'lancer_intent_1',
+                        goal: '寻找值得一战的对手',
+                        priority: 1,
+                        status: 'active',
+                        subIntents: []
+                    }
+                ]
+            },
+            'rider_team': {
+                id: 'rider_team',
+                type: 'npc',
+                masterName: '间桐慎二',
+                servantClass: 'Rider',
+                servantName: '???',
+                personality: '谨慎且服从御主，隐藏实力',
+                initialLocation: 'homurahara_academy',
+                intents: [
+                    {
+                        id: 'rider_intent_1',
+                        goal: '保护真正的御主',
+                        priority: 1,
+                        status: 'active',
+                        subIntents: []
+                    }
+                ]
+            },
+            'caster_team': {
+                id: 'caster_team',
+                type: 'npc',
+                masterName: '�的原的一',
+                servantClass: 'Caster',
+                servantName: '???',
+                personality: '狡猾且有野心，善于布置陷阱',
+                initialLocation: 'ryuudou_temple',
+                intents: [
+                    {
+                        id: 'caster_intent_1',
+                        goal: '强化柳洞寺的结界',
+                        priority: 1,
+                        status: 'active',
+                        subIntents: [
+                            {
+                                id: 'caster_intent_1_1',
+                                goal: '收集更多魔力',
+                                priority: 2,
+                                status: 'active',
+                                subIntents: []
+                            }
+                        ]
+                    }
+                ]
+            },
+            'assassin_team': {
+                id: 'assassin_team',
+                type: 'npc',
+                masterName: 'Caster',
+                servantClass: 'Assassin',
+                servantName: '???',
+                personality: '沉默寡言，忠实守护山门',
+                initialLocation: 'mountain_path',
+                intents: [
+                    {
+                        id: 'assassin_intent_1',
+                        goal: '守护通往柳洞寺的道路',
+                        priority: 1,
+                        status: 'active',
+                        subIntents: []
+                    }
+                ]
+            },
+            'berserker_team': {
+                id: 'berserker_team',
+                type: 'npc',
+                masterName: '伊莉雅',
+                servantClass: 'Berserker',
+                servantName: '???',
+                personality: '狂暴但忠诚，保护御主是第一要务',
+                initialLocation: 'einzbern_forest',
+                intents: [
+                    {
+                        id: 'berserker_intent_1',
+                        goal: '保护伊莉雅',
+                        priority: 1,
+                        status: 'active',
+                        subIntents: [
+                            {
+                                id: 'berserker_intent_1_1',
+                                goal: '消灭威胁到御主的敌人',
+                                priority: 1,
+                                status: 'active',
+                                subIntents: []
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // ============ LOCATION HISTORY SYSTEM ============
+        // 每个地点的故事历史
+        let locationHistories = {};
+
+        // 初始化所有地点的历史记录
+        function initializeLocationHistories() {
+            Object.keys(fuyukiMapData).forEach(locationId => {
+                locationHistories[locationId] = {
+                    entries: [],
+                    lastUpdate: null
+                };
+            });
+        }
+
+        // 添加地点历史记录
+        function addLocationHistory(locationId, content, turn, isDetailed = false, charactersPresent = []) {
+            if (!locationHistories[locationId]) {
+                locationHistories[locationId] = { entries: [], lastUpdate: null };
+            }
+            
+            locationHistories[locationId].entries.push({
+                turn: turn,
+                day: gameState.day,
+                timePhase: gameState.timePhase,
+                content: content,
+                isDetailed: isDetailed,
+                timestamp: new Date().toISOString(),
+                charactersPresent: charactersPresent.length > 0 ? charactersPresent : getCharactersAtLocation(locationId).map(c => c.id)
+            });
+            
+            locationHistories[locationId].lastUpdate = new Date().toISOString();
+            
+            // 保持最多50条历史记录
+            if (locationHistories[locationId].entries.length > 50) {
+                locationHistories[locationId].entries = locationHistories[locationId].entries.slice(-50);
+            }
+        }
+        
+        // 处理后端返回的地点历史更新
+        function processLocationHistories(histories) {
+            if (!histories) return;
+            
+            Object.entries(histories).forEach(([locationId, historyEntry]) => {
+                addLocationHistory(
+                    locationId,
+                    historyEntry.narrative,
+                    historyEntry.turn,
+                    historyEntry.is_player_location || false,
+                    historyEntry.characters_present || []
+                );
+            });
+        }
+        
+        // 处理后端返回的角色状态更新
+        function processCharacterUpdates(updates) {
+            if (!updates || updates.length === 0) return;
+            
+            console.log('[processCharacterUpdates] Processing', updates.length, 'character updates');
+            
+            updates.forEach(update => {
+                const charId = update.character_id;
+                
+                // 查找对应的角色
+                let targetChar = null;
+                let targetCharId = null;
+                for (const [id, char] of Object.entries(characters)) {
+                    if (id === charId || char.id === charId) {
+                        targetChar = char;
+                        targetCharId = id;
+                        break;
+                    }
+                }
+                
+                if (!targetChar) {
+                    console.warn(`[processCharacterUpdates] Character not found: ${charId}`);
+                    return;
+                }
+                
+                // 更新记忆
+                if (update.new_memory) {
+                    if (!targetChar.memories) {
+                        targetChar.memories = [];
+                    }
+                    targetChar.memories.push({
+                        turn: update.new_memory.turn || gameState.turnCount,
+                        content: update.new_memory.content,
+                        importance: update.new_memory.importance || 'medium',
+                        relatedCharacters: update.new_memory.related_characters || []
+                    });
+                    
+                    console.log(`[processCharacterUpdates] ${charId} new memory: ${update.new_memory.content}`);
+                    
+                    // 保持最多50条记忆
+                    if (targetChar.memories.length > 50) {
+                        // 按重要性排序，保留重要的
+                        targetChar.memories.sort((a, b) => {
+                            const impOrder = { high: 3, medium: 2, low: 1 };
+                            return (impOrder[b.importance] || 2) - (impOrder[a.importance] || 2);
+                        });
+                        targetChar.memories = targetChar.memories.slice(0, 50);
+                    }
+                }
+                
+                // 更新意图
+                if (update.new_intents && update.new_intents.length > 0) {
+                    if (!targetChar.intents) {
+                        targetChar.intents = [];
+                    }
+                    update.new_intents.forEach(newIntent => {
+                        const intent = {
+                            id: newIntent.id || `intent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            goal: newIntent.goal,
+                            priority: newIntent.priority || 3,
+                            status: newIntent.status || 'active',
+                            subIntents: newIntent.sub_intents || []
+                        };
+                        targetChar.intents.push(intent);
+                        console.log(`[processCharacterUpdates] ${charId} new intent: ${intent.goal}`);
+                    });
+                }
+                
+                // 更新现有意图状态
+                if (update.updated_intents) {
+                    Object.entries(update.updated_intents).forEach(([intentId, newStatus]) => {
+                        updateIntentStatus(targetChar.intents, intentId, newStatus);
+                        console.log(`[processCharacterUpdates] ${charId} intent ${intentId} status -> ${newStatus}`);
+                    });
+                }
+                
+                // 处理位置变更（注意：这里的位置变更会在 applyStateUpdates 的 npc_movements 中处理）
+                // 这里只做日志记录
+                if (update.location_change) {
+                    console.log(`[processCharacterUpdates] ${charId} will move to ${update.location_change}`);
+                }
+                
+                // 处理HP/MP变化
+                if (update.hp_change && update.hp_change !== 0) {
+                    console.log(`[processCharacterUpdates] ${charId} HP change: ${update.hp_change}`);
+                }
+                if (update.mp_change && update.mp_change !== 0) {
+                    console.log(`[processCharacterUpdates] ${charId} MP change: ${update.mp_change}`);
+                }
+            });
+        }
+        
+        // 递归更新意图状态
+        function updateIntentStatus(intents, intentId, newStatus) {
+            if (!intents) return;
+            
+            for (const intent of intents) {
+                if (intent.id === intentId) {
+                    intent.status = newStatus;
+                    return true;
+                }
+                if (intent.subIntents && updateIntentStatus(intent.subIntents, intentId, newStatus)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 获取某个地点的所有角色
+        function getCharactersAtLocation(locationId) {
+            return Object.values(characters).filter(c => 
+                c.isAlive && c.location === locationId
+            );
+        }
+
+        // 获取所有有角色的地点
+        function getLocationsWithCharacters() {
+            const locations = new Set();
+            Object.values(characters).forEach(c => {
+                if (c.isAlive && c.location) {
+                    locations.add(c.location);
+                }
+            });
+            return Array.from(locations);
+        }
+
+        // Command spell usage tracking
+        let pendingCommandSpell = false;
+
+        // ============ INITIALIZATION ============
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+        async function initializeGame() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            try {
+                // Load game initialization data from sessionStorage
+                const gameInitDataStr = sessionStorage.getItem('gameInitData');
+                
+                if (!gameInitDataStr) {
+                    // No initialization data - show error and redirect back
+                    loadingOverlay.querySelector('.loading-text').textContent = '未找到游戏数据...';
+                    setTimeout(() => {
+                        window.location.href = 'summon.html';
+                    }, 2000);
+                    return;
+                }
+                
+                const gameInitData = JSON.parse(gameInitDataStr);
+                console.log('Loaded game init data:', gameInitData);
+                
+                // Update loading text
+                loadingOverlay.querySelector('.loading-text').textContent = '加载圣杯战争数据...';
+                
+                // Process initialization data
+                processGameInitData(gameInitData);
+                
+                // Initialize war status for all classes
+                initializeWarStatus(gameInitData);
+                
+                // Update all UI elements
+                updateAllUI();
+                
+                // Add initial story entry - use LLM response if available, otherwise fallback to generic message
+                if (gameInitData.initialResponse) {
+                    addStoryEntry(gameInitData.initialResponse, 'narrative');
+                } else {
+                    addStoryEntry('召唤仪式完成。你与从者的契约已经成立，圣杯战争正式开始。', 'system');
+                }
+                
+                // Clear sessionStorage after loading
+                // sessionStorage.removeItem('gameInitData'); // Keep for debugging
+                
+                // Hide loading, show game
+                setTimeout(() => {
+                    loadingOverlay.classList.remove('active');
+                    gameContainer.style.display = 'grid';
+                    
+                    // Initialize map canvas AFTER container is visible
+                    // Need another small delay for layout to complete
+                    setTimeout(initializeMapCanvas, 50);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error initializing game:', error);
+                loadingOverlay.querySelector('.loading-text').textContent = '初始化失败: ' + error.message;
+                setTimeout(() => {
+                    window.location.href = 'summon.html';
+                }, 3000);
+            }
+        }
+
+        function processGameInitData(data) {
+            // Set game ID
+            gameState.gameId = data.gameId;
+            
+            // Process servant data from summon
+            if (data.servantData) {
+                gameState.servant.trueName = data.servantData.中文名 || gameState.servant.trueName;
+                gameState.servant.englishName = data.servantData.英文名 || gameState.servant.englishName;
+                gameState.servant.class = data.servantData.职阶 || gameState.servant.class;
+                
+                // Process parameters if available
+                if (data.servantData.能力值) {
+                    const params = data.servantData.能力值;
+                    gameState.servant.parameters = {
+                        strength: params.筋力 || 'C',
+                        endurance: params.耐久 || 'C',
+                        agility: params.敏捷 || 'C',
+                        mana: params.魔力 || 'C',
+                        luck: params.幸运 || 'C',
+                        np: params.宝具 || 'C'
+                    };
+                }
+            }
+            
+            // Process servant images
+            if (data.basePath && data.availableImages && data.availableImages.length > 0) {
+                gameState.servant.imagePath = `${data.basePath}/images/${data.availableImages[0]}`;
+                gameState.servant.availableImages = data.availableImages.map(img => `${data.basePath}/images/${img}`);
+            }
+            
+            // Store god view if available (from init_game response)
+            if (data.godView) {
+                godView = data.godView;
+                console.log('[processGameInitData] Stored god view:', godView);
+            }
+            
+            // Initialize NPC characters from enemy combatants
+            if (data.enemyCombatants) {
+                initializeNPCCharacters(data.enemyCombatants);
+            }
+            
+            // Update player character location
+            characters.player.location = gameState.location;
+            characters.player.servantClass = gameState.servant.class;
+            characters.player.servantName = gameState.servant.trueName;
+        }
+        
+        // Initialize NPC characters from enemy combatants data
+        function initializeNPCCharacters(enemyCombatants) {
+            console.log('[initializeNPCCharacters] Initializing', enemyCombatants.length, 'NPCs');
+            
+            enemyCombatants.forEach(combatant => {
+                const charId = `${combatant.servant_class}_team`;
+                
+                characters[charId] = {
+                    id: charId,
+                    type: 'npc',
+                    masterName: combatant.master?.name || '???',
+                    servantClass: combatant.servant_class,
+                    servantName: combatant.servant?.true_name || '???',
+                    personality: combatant.master?.personality_type || '',
+                    location: getRandomStartingLocation(combatant.servant_class),
+                    isAlive: true,
+                    intents: [],
+                    memories: []
+                };
+                
+                console.log(`[initializeNPCCharacters] Created ${charId}:`, characters[charId]);
+            });
+        }
+        
+        // Get random starting location for NPC based on class
+        function getRandomStartingLocation(servantClass) {
+            const locationPreferences = {
+                'Saber': ['emiya_residence', 'fuyuki_bridge', 'shinto_center'],
+                'Archer': ['fuyuki_church', 'shinto_center', 'center_building'],
+                'Lancer': ['fuyuki_bridge', 'fuyuki_harbor', 'riverside_park'],
+                'Rider': ['fuyuki_harbor', 'shinto_center', 'fuyuki_bridge'],
+                'Caster': ['ryuudou_temple', 'fuyuki_church', 'tohsaka_residence'],
+                'Assassin': ['mountain_path', 'ryuudou_temple', 'shinto_center'],
+                'Berserker': ['einzbern_forest', 'fuyuki_harbor', 'fuyuki_bridge']
+            };
+            
+            const preferred = locationPreferences[servantClass] || ['shinto_center', 'fuyuki_bridge'];
+            return preferred[Math.floor(Math.random() * preferred.length)];
+        }
+
+        function initializeWarStatus(data) {
+            const playerClass = gameState.servant.class;
+            
+            // Initialize war status for all 7 standard classes
+            STANDARD_CLASSES.forEach(cls => {
+                const isPlayer = cls.toLowerCase() === playerClass.toLowerCase() || cls === playerClass;
+                
+                gameState.warStatus[cls] = {
+                    isPlayer: isPlayer,
+                    status: 'alive',
+                    trueNameRevealed: isPlayer,
+                    knownTrueName: isPlayer ? gameState.servant.trueName : null,
+                    knownInfo: []
+                };
+            });
+            
+            // Update war status list UI
+            updateWarStatusUI();
+        }
+
+        // ============ UI UPDATE FUNCTIONS ============
+        function updateAllUI() {
+            updateTimeDisplay();
+            updateMasterStatus();
+            updateServantStatus();
+            updateLocationDisplay();
+            updateWarStatusUI();
+            updateInventoryUI();
+            // Note: Map canvas is initialized separately after game container is visible
+        }
+
+        function updateTimeDisplay() {
+            document.getElementById('dayCounter').textContent = `第${gameState.day}天`;
+            
+            const timePhaseEl = document.getElementById('timePhase');
+            timePhaseEl.textContent = timePhaseNames[gameState.timePhase] || gameState.timePhase;
+            timePhaseEl.className = 'time-phase ' + gameState.timePhase;
+        }
+
+        function updateMasterStatus() {
+            document.getElementById('masterName').textContent = gameState.master.name;
+            document.getElementById('masterTitle').textContent = gameState.master.title;
+            
+            // Mana bar
+            const manaPercent = (gameState.master.mana / gameState.master.maxMana) * 100;
+            document.getElementById('manaBar').style.width = manaPercent + '%';
+            document.getElementById('manaValue').textContent = `${gameState.master.mana}/${gameState.master.maxMana}`;
+            
+            // Physical status
+            const physicalStatusEl = document.getElementById('physicalStatus');
+            physicalStatusEl.textContent = getPhysicalStatusText(gameState.master.physicalStatus);
+            physicalStatusEl.className = 'physical-status-value ' + getPhysicalStatusClass(gameState.master.physicalStatus);
+            
+            // Command spells
+            updateCommandSpellsUI();
+        }
+
+        function getPhysicalStatusText(status) {
+            const statusMap = {
+                'healthy': '健康',
+                'tired': '疲劳',
+                'injured': '轻伤',
+                'critical': '重伤',
+                'exhausted': '极度疲劳'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPhysicalStatusClass(status) {
+            if (status === 'injured' || status === 'tired' || status === 'exhausted') return 'injured';
+            if (status === 'critical') return 'critical';
+            return '';
+        }
+
+        function updateCommandSpellsUI() {
+            const container = document.getElementById('commandSpells');
+            const spells = container.querySelectorAll('.command-spell');
+            
+            spells.forEach((spell, index) => {
+                if (index < gameState.master.commandSpells) {
+                    spell.classList.add('active');
+                    spell.classList.remove('used');
+                } else {
+                    spell.classList.remove('active');
+                    spell.classList.add('used');
+                }
+            });
+        }
+
+        function updateServantStatus() {
+            // Portrait
+            const portrait = document.getElementById('servantPortrait');
+            if (gameState.servant.imagePath) {
+                portrait.src = gameState.servant.imagePath;
+            }
+            
+            // Class badge
+            document.getElementById('servantClassIcon').src = classIcons[gameState.servant.class] || classIcons['Saber'];
+            document.getElementById('servantClassLabel').textContent = gameState.servant.class;
+            
+            // Names
+            document.getElementById('servantMainName').textContent = gameState.servant.trueName;
+            document.getElementById('servantSubName').textContent = gameState.servant.englishName;
+            
+            // Draw radar chart
+            drawServantRadarChart();
+            
+            // HP bar
+            const hpPercent = (gameState.servant.hp / gameState.servant.maxHp) * 100;
+            document.getElementById('hpBar').style.width = hpPercent + '%';
+            document.getElementById('hpValue').textContent = `${gameState.servant.hp}/${gameState.servant.maxHp}`;
+            
+            // NP bar
+            document.getElementById('npBar').style.width = gameState.servant.np + '%';
+            document.getElementById('npValue').textContent = gameState.servant.np + '%';
+            
+            // Bond level
+            updateBondLevel();
+        }
+
+        function drawServantRadarChart() {
+            const canvas = document.getElementById('servantRadarChart');
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 30;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const labels = ['筋力', '耐久', '敏捷', '魔力', '幸运', '宝具'];
+            const params = gameState.servant.parameters;
+            const values = [
+                statToValue(params.strength),
+                statToValue(params.endurance),
+                statToValue(params.agility),
+                statToValue(params.mana),
+                statToValue(params.luck),
+                statToValue(params.np)
+            ];
+            
+            const angleStep = (Math.PI * 2) / labels.length;
+            
+            // Draw background circles
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * i / 5, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Draw axis lines
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+            for (let i = 0; i < labels.length; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+                ctx.stroke();
+            }
+            
+            // Draw data polygon
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(212, 175, 55, 0.25)';
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.8)';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < values.length; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                const value = values[i] / 100 * radius;
+                const x = centerX + Math.cos(angle) * value;
+                const y = centerY + Math.sin(angle) * value;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Draw labels
+            ctx.fillStyle = '#e8e8e8';
+            ctx.font = '11px "Noto Serif SC", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            for (let i = 0; i < labels.length; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                const labelRadius = radius + 18;
+                const x = centerX + Math.cos(angle) * labelRadius;
+                const y = centerY + Math.sin(angle) * labelRadius;
+                ctx.fillText(labels[i], x, y);
+            }
+        }
+
+        function statToValue(stat) {
+            const baseValues = {
+                'EX': 100, 'A++': 95, 'A+': 90, 'A': 85, 'A-': 80,
+                'B++': 75, 'B+': 70, 'B': 65, 'B-': 60,
+                'C++': 55, 'C+': 50, 'C': 45, 'C-': 40,
+                'D++': 35, 'D+': 30, 'D': 25, 'D-': 20,
+                'E++': 15, 'E+': 12, 'E': 10, 'E-': 5
+            };
+            return baseValues[stat] || 50;
+        }
+
+        function updateBondLevel() {
+            const container = document.getElementById('bondHearts');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                const heart = document.createElement('span');
+                heart.className = 'bond-heart' + (i <= gameState.servant.bondLevel ? ' filled' : '');
+                heart.textContent = i <= gameState.servant.bondLevel ? '❤️' : '🤍';
+                container.appendChild(heart);
+            }
+        }
+
+        function updateLocationDisplay() {
+            const locationData = fuyukiMapData[gameState.location];
+            const displayName = locationData ? locationData.name : (locationNames[gameState.location] || gameState.location);
+            document.getElementById('sceneLocation').textContent = displayName;
+            
+            // Redraw map to update current location indicator (only if canvas is initialized)
+            const canvas = document.getElementById('mapCanvas');
+            if (canvas && canvas.width > 0 && canvas.height > 0) {
+                drawMapGraph();
+            }
+        }
+
+        // ============ MAP GRAPH VISUALIZATION ============
+        let mapCanvas, mapCtx;
+        let mapNodePositions = {};
+        let selectedLocationId = null;
+        
+        // Define node positions for the graph layout
+        function initializeMapPositions() {
+            const canvas = document.getElementById('mapCanvas');
+            const container = canvas.parentElement;
+            
+            // Get device pixel ratio for crisp rendering on high-DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            const displayWidth = container.offsetWidth;
+            const displayHeight = container.offsetHeight;
+            
+            // Set canvas internal resolution to match display * pixel ratio
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+            
+            // Scale canvas back down with CSS
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+            
+            const w = displayWidth;
+            const h = displayHeight;
+            
+            // Layout positions (relative percentages converted to actual pixels)
+            // Left side: Miyama Town
+            mapNodePositions = {
+                // Miyama (left side)
+                'ryuudou_temple': { x: w * 0.12, y: h * 0.15 },
+                'einzbern_forest': { x: w * 0.05, y: h * 0.08 },
+                'mountain_path': { x: w * 0.18, y: h * 0.35 },
+                'homurahara_academy': { x: w * 0.25, y: h * 0.55 },
+                'miyama_crossroads': { x: w * 0.30, y: h * 0.40 },
+                'emiya_residence': { x: w * 0.15, y: h * 0.60 },
+                'tohsaka_residence': { x: w * 0.20, y: h * 0.80 },
+                'shopping_district': { x: w * 0.40, y: h * 0.55 },
+                
+                // Bridge (center)
+                'fuyuki_bridge': { x: w * 0.50, y: h * 0.50 },
+                
+                // Shinto (right side)
+                'riverside_park': { x: w * 0.60, y: h * 0.45 },
+                'shinto_center': { x: w * 0.72, y: h * 0.50 },
+                'center_building': { x: w * 0.85, y: h * 0.25 },
+                'fuyuki_church': { x: w * 0.88, y: h * 0.55 },
+                'fuyuki_harbor': { x: w * 0.80, y: h * 0.80 }
+            };
+        }
+        
+        function drawMapGraph() {
+            const canvas = document.getElementById('mapCanvas');
+            if (!canvas) return;
+            
+            mapCtx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Get display dimensions
+            const w = parseInt(canvas.style.width) || canvas.width / dpr;
+            const h = parseInt(canvas.style.height) || canvas.height / dpr;
+            
+            // Clear canvas
+            mapCtx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Scale context for high DPI
+            mapCtx.save();
+            mapCtx.scale(dpr, dpr);
+            
+            // Draw region backgrounds
+            drawRegionBackgrounds(w, h);
+            
+            // Draw edges (connections)
+            drawMapEdges();
+            
+            // Draw nodes
+            drawMapNodes();
+        }
+        
+        function drawRegionBackgrounds(w, h) {
+            // Miyama Town region (left)
+            mapCtx.fillStyle = 'rgba(46, 139, 87, 0.08)';
+            mapCtx.beginPath();
+            mapCtx.ellipse(w * 0.22, h * 0.50, w * 0.25, h * 0.45, 0, 0, Math.PI * 2);
+            mapCtx.fill();
+            
+            // Shinto region (right)
+            mapCtx.fillStyle = 'rgba(65, 105, 225, 0.08)';
+            mapCtx.beginPath();
+            mapCtx.ellipse(w * 0.75, h * 0.50, w * 0.22, h * 0.42, 0, 0, Math.PI * 2);
+            mapCtx.fill();
+            
+            // Region labels
+            mapCtx.font = '10px "Noto Serif SC", serif';
+            mapCtx.fillStyle = 'rgba(212, 175, 55, 0.4)';
+            mapCtx.textAlign = 'center';
+            mapCtx.fillText('深 山 町', w * 0.22, h * 0.95);
+            mapCtx.fillText('新 都', w * 0.75, h * 0.95);
+        }
+        
+        function drawMapEdges() {
+            mapCtx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
+            mapCtx.lineWidth = 1.5;
+            
+            const drawnEdges = new Set();
+            
+            Object.values(fuyukiMapData).forEach(location => {
+                const fromPos = mapNodePositions[location.id];
+                if (!fromPos) return;
+                
+                location.connections.forEach(connId => {
+                    const toPos = mapNodePositions[connId];
+                    if (!toPos) return;
+                    
+                    // Avoid drawing duplicate edges
+                    const edgeKey = [location.id, connId].sort().join('-');
+                    if (drawnEdges.has(edgeKey)) return;
+                    drawnEdges.add(edgeKey);
+                    
+                    mapCtx.beginPath();
+                    mapCtx.moveTo(fromPos.x, fromPos.y);
+                    mapCtx.lineTo(toPos.x, toPos.y);
+                    mapCtx.stroke();
+                });
+            });
+        }
+        
+        function drawMapNodes() {
+            // First, determine which locations have servants
+            const locationsWithServants = getLocationsWithCharacters();
+            const servantCountByLocation = {};
+            
+            // Count servants at each location
+            Object.values(characters).forEach(char => {
+                if (char.isAlive && char.location) {
+                    if (!servantCountByLocation[char.location]) {
+                        servantCountByLocation[char.location] = { player: false, npc: 0 };
+                    }
+                    if (char.type === 'player') {
+                        servantCountByLocation[char.location].player = true;
+                    } else {
+                        servantCountByLocation[char.location].npc++;
+                    }
+                }
+            });
+            
+            Object.entries(fuyukiMapData).forEach(([id, location]) => {
+                const pos = mapNodePositions[id];
+                if (!pos) return;
+                
+                const isCurrent = gameState.location === id ||
+                                  (id === 'tohsaka_residence' && gameState.location === 'tohsaka_manor');
+                const isHovered = selectedLocationId === id;
+                const hasServants = locationsWithServants.includes(id);
+                const servantInfo = servantCountByLocation[id];
+                
+                // Node size based on type
+                let radius = 8;
+                if (location.tactical_type === 'Hub') radius = 10;
+                if (location.tactical_type === 'Fortress') radius = 9;
+                if (location.tactical_type === 'Chokepoint' || location.tactical_type === 'Bridge') radius = 7;
+                
+                // Draw glow for current location
+                if (isCurrent) {
+                    mapCtx.beginPath();
+                    const gradient = mapCtx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, radius * 2.5);
+                    gradient.addColorStop(0, 'rgba(212, 175, 55, 0.6)');
+                    gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+                    mapCtx.fillStyle = gradient;
+                    mapCtx.arc(pos.x, pos.y, radius * 2.5, 0, Math.PI * 2);
+                    mapCtx.fill();
+                }
+                
+                // Draw servant presence indicator (pulsing ring)
+                if (hasServants && !isCurrent) {
+                    // Draw pulsing outer ring for locations with servants
+                    const pulsePhase = (Date.now() % 2000) / 2000;
+                    const pulseRadius = radius + 3 + Math.sin(pulsePhase * Math.PI * 2) * 2;
+                    const pulseAlpha = 0.4 + Math.sin(pulsePhase * Math.PI * 2) * 0.2;
+                    
+                    mapCtx.beginPath();
+                    if (servantInfo && servantInfo.npc > 1) {
+                        // Multiple servants - red danger indicator
+                        mapCtx.strokeStyle = `rgba(255, 68, 68, ${pulseAlpha})`;
+                        mapCtx.lineWidth = 2;
+                    } else {
+                        // Single servant - orange warning indicator
+                        mapCtx.strokeStyle = `rgba(255, 165, 0, ${pulseAlpha})`;
+                        mapCtx.lineWidth = 1.5;
+                    }
+                    mapCtx.arc(pos.x, pos.y, pulseRadius, 0, Math.PI * 2);
+                    mapCtx.stroke();
+                }
+                
+                // Draw hover highlight
+                if (isHovered && !isCurrent) {
+                    mapCtx.beginPath();
+                    mapCtx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+                    mapCtx.lineWidth = 2;
+                    mapCtx.arc(pos.x, pos.y, radius + 6, 0, Math.PI * 2);
+                    mapCtx.stroke();
+                }
+                
+                // Node fill based on mana density
+                let nodeColor;
+                if (isCurrent) {
+                    nodeColor = '#d4af37';
+                } else if (location.mana_density >= 4) {
+                    nodeColor = '#8a2be2'; // High mana - purple
+                } else if (location.mana_density >= 3) {
+                    nodeColor = '#4169e1'; // Medium mana - blue
+                } else {
+                    nodeColor = '#2e8b57'; // Low mana - green
+                }
+                
+                // Draw node
+                mapCtx.beginPath();
+                mapCtx.fillStyle = nodeColor;
+                mapCtx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                mapCtx.fill();
+                
+                // Node border - highlight if has servants
+                if (hasServants && !isCurrent) {
+                    mapCtx.strokeStyle = servantInfo && servantInfo.npc > 1 ? '#ff4444' : '#ffa500';
+                    mapCtx.lineWidth = 2;
+                } else {
+                    mapCtx.strokeStyle = isCurrent ? '#ffd700' : 'rgba(212, 175, 55, 0.5)';
+                    mapCtx.lineWidth = isCurrent ? 2 : 1;
+                }
+                mapCtx.stroke();
+                
+                // Draw servant count badge
+                if (hasServants && servantInfo) {
+                    const totalServants = (servantInfo.player ? 1 : 0) + servantInfo.npc;
+                    if (totalServants > 0) {
+                        // Badge position
+                        const badgeX = pos.x + radius - 2;
+                        const badgeY = pos.y - radius + 2;
+                        const badgeRadius = 6;
+                        
+                        // Badge background
+                        mapCtx.beginPath();
+                        if (servantInfo.player && servantInfo.npc > 0) {
+                            // Player + enemies - danger!
+                            mapCtx.fillStyle = '#ff4444';
+                        } else if (servantInfo.player) {
+                            // Just player
+                            mapCtx.fillStyle = '#4CAF50';
+                        } else {
+                            // Just NPCs
+                            mapCtx.fillStyle = '#ffa500';
+                        }
+                        mapCtx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
+                        mapCtx.fill();
+                        
+                        // Badge border
+                        mapCtx.strokeStyle = '#fff';
+                        mapCtx.lineWidth = 1;
+                        mapCtx.stroke();
+                        
+                        // Badge text
+                        mapCtx.font = 'bold 8px Arial';
+                        mapCtx.fillStyle = '#fff';
+                        mapCtx.textAlign = 'center';
+                        mapCtx.textBaseline = 'middle';
+                        mapCtx.fillText(totalServants.toString(), badgeX, badgeY);
+                    }
+                }
+                
+                // Draw label
+                mapCtx.font = '9px "Noto Serif SC", serif';
+                mapCtx.fillStyle = isCurrent ? '#ffd700' : (hasServants ? '#ffa500' : '#e8e8e8');
+                mapCtx.textAlign = 'center';
+                mapCtx.textBaseline = 'top';
+                mapCtx.fillText(location.name, pos.x, pos.y + radius + 4);
+            });
+            
+            // Restore context after drawing
+            mapCtx.restore();
+        }
+        
+        // Auto-refresh map to show pulsing animation
+        let mapAnimationFrame = null;
+        function startMapAnimation() {
+            if (mapAnimationFrame) return;
+            
+            function animate() {
+                // Check if there are any locations with servants (other than current)
+                const locationsWithServants = getLocationsWithCharacters();
+                const hasOtherServants = locationsWithServants.some(loc => loc !== gameState.location);
+                
+                if (hasOtherServants) {
+                    drawMapGraph();
+                }
+                
+                mapAnimationFrame = requestAnimationFrame(animate);
+            }
+            
+            mapAnimationFrame = requestAnimationFrame(animate);
+        }
+        
+        function stopMapAnimation() {
+            if (mapAnimationFrame) {
+                cancelAnimationFrame(mapAnimationFrame);
+                mapAnimationFrame = null;
+            }
+        }
+        
+        function handleMapClick(event) {
+            const canvas = document.getElementById('mapCanvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            // Convert screen coordinates to logical canvas coordinates
+            // We use rect dimensions since mapNodePositions uses display dimensions
+            const x = (event.clientX - rect.left) * (parseInt(canvas.style.width) || rect.width) / rect.width;
+            const y = (event.clientY - rect.top) * (parseInt(canvas.style.height) || rect.height) / rect.height;
+            
+            // Find clicked node
+            let clickedId = null;
+            let minDist = Infinity;
+            Object.entries(mapNodePositions).forEach(([id, pos]) => {
+                const dx = x - pos.x;
+                const dy = y - pos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 20 && dist < minDist) { // Click radius, pick closest
+                    minDist = dist;
+                    clickedId = id;
+                }
+            });
+            
+            if (clickedId && fuyukiMapData[clickedId]) {
+                openLocationModal(clickedId);
+            }
+        }
+        
+        function handleMapHover(event) {
+            const canvas = document.getElementById('mapCanvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            // Convert screen coordinates to logical canvas coordinates
+            const x = (event.clientX - rect.left) * (parseInt(canvas.style.width) || rect.width) / rect.width;
+            const y = (event.clientY - rect.top) * (parseInt(canvas.style.height) || rect.height) / rect.height;
+            
+            // Find hovered node
+            let hoveredId = null;
+            let minDist = Infinity;
+            Object.entries(mapNodePositions).forEach(([id, pos]) => {
+                const dx = x - pos.x;
+                const dy = y - pos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 20 && dist < minDist) {
+                    minDist = dist;
+                    hoveredId = id;
+                }
+            });
+            
+            if (hoveredId !== selectedLocationId) {
+                selectedLocationId = hoveredId;
+                canvas.style.cursor = hoveredId ? 'pointer' : 'default';
+                drawMapGraph();
+            }
+        }
+        
+        // ============ LOCATION MODAL ============
+        let currentModalLocationId = null;
+        
+        function openLocationModal(locationId) {
+            const location = fuyukiMapData[locationId];
+            if (!location) return;
+            
+            currentModalLocationId = locationId;
+            
+            // Update modal content
+            document.getElementById('locationModalTitle').textContent = location.name;
+            document.getElementById('locationModalSubtitle').textContent = location.englishName;
+            document.getElementById('locationModalDesc').textContent = location.description;
+            document.getElementById('locationModalType').textContent = location.tactical_type;
+            document.getElementById('locationModalPopulation').textContent = location.population;
+            
+            // Mana density
+            const manaValue = location.mana_density;
+            document.getElementById('locationModalManaValue').textContent = `${manaValue}/5`;
+            document.getElementById('locationModalManaBar').style.width = `${manaValue * 20}%`;
+            
+            // Mana value color
+            const manaValueEl = document.getElementById('locationModalManaValue').parentElement.querySelector('.location-stat-value');
+            if (manaValueEl) {
+                manaValueEl.className = 'location-stat-value';
+                if (manaValue >= 4) manaValueEl.classList.add('high');
+                else if (manaValue >= 3) manaValueEl.classList.add('medium');
+                else manaValueEl.classList.add('low');
+            }
+            
+            // Connections
+            const connectionsContainer = document.getElementById('locationModalConnections');
+            connectionsContainer.innerHTML = '';
+            location.connections.forEach(connId => {
+                const connLocation = fuyukiMapData[connId];
+                if (connLocation) {
+                    const tag = document.createElement('span');
+                    tag.className = 'connection-tag';
+                    tag.textContent = connLocation.name;
+                    tag.onclick = () => openLocationModal(connId);
+                    connectionsContainer.appendChild(tag);
+                }
+            });
+            
+            // Render servants at this location
+            renderLocationServants(locationId);
+            
+            // Render location history
+            renderLocationHistory(locationId);
+            
+            // Update move button
+            const moveBtn = document.getElementById('locationModalMoveBtn');
+            const isCurrent = gameState.location === locationId ||
+                              (locationId === 'tohsaka_residence' && gameState.location === 'tohsaka_manor');
+            if (isCurrent) {
+                moveBtn.textContent = '当前位置';
+                moveBtn.disabled = true;
+                moveBtn.style.opacity = '0.5';
+            } else {
+                moveBtn.textContent = '前往此地';
+                moveBtn.disabled = false;
+                moveBtn.style.opacity = '1';
+            }
+            
+            // Show modal
+            document.getElementById('locationModal').classList.add('active');
+        }
+        
+        // 渲染地点当前从者
+        function renderLocationServants(locationId) {
+            const container = document.getElementById('locationServantsContainer');
+            if (!container) return;
+            
+            // Get all characters at this location
+            const servantsAtLocation = getCharactersAtLocation(locationId);
+            
+            if (servantsAtLocation.length === 0) {
+                container.innerHTML = '<div class="location-servants-empty">此地点暂无从者...</div>';
+                return;
+            }
+            
+            let html = '';
+            servantsAtLocation.forEach(char => {
+                const isPlayer = char.type === 'player';
+                const servantClass = char.servantClass || '???';
+                const masterName = char.masterName || '未知御主';
+                const iconSrc = classIcons[servantClass] || classIcons['Saber'];
+                
+                html += `
+                    <div class="location-servant-item ${isPlayer ? 'player' : 'npc'}">
+                        <img class="location-servant-icon" src="${iconSrc}" alt="${servantClass}">
+                        <div class="location-servant-info">
+                            <div class="location-servant-class">${servantClass}</div>
+                            <div class="location-servant-master">御主: ${masterName}</div>
+                        </div>
+                        <span class="location-servant-badge ${isPlayer ? 'player-badge' : 'npc-badge'}">
+                            ${isPlayer ? '玩家' : '敌方'}
+                        </span>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 渲染地点历史记录
+        function renderLocationHistory(locationId) {
+            const container = document.getElementById('locationHistoryContainer');
+            if (!container) return;
+            
+            const history = locationHistories[locationId];
+            
+            if (!history || !history.entries || history.entries.length === 0) {
+                container.innerHTML = '<div class="location-history-empty">暂无历史记录...</div>';
+                return;
+            }
+            
+            // 按回合倒序排列，显示最近5条
+            const recentEntries = history.entries.slice(-5).reverse();
+            
+            let html = '';
+            recentEntries.forEach(entry => {
+                const timePhaseText = timePhaseNames[entry.timePhase] || entry.timePhase;
+                const truncatedContent = entry.content.length > 150
+                    ? entry.content.substring(0, 150) + '...'
+                    : entry.content;
+                
+                html += `
+                    <div class="location-history-entry ${entry.isDetailed ? 'detailed' : ''}">
+                        <div class="history-entry-header">
+                            <span class="history-entry-turn">第${entry.turn}回合 · ${timePhaseText}</span>
+                        </div>
+                        <div class="history-entry-content">${truncatedContent}</div>
+                        ${entry.charactersPresent && entry.charactersPresent.length > 0
+                            ? `<div class="history-entry-chars">在场: ${entry.charactersPresent.join(', ')}</div>`
+                            : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function closeLocationModal() {
+            document.getElementById('locationModal').classList.remove('active');
+            currentModalLocationId = null;
+        }
+        
+        // ============ PATHFINDING AND MOVEMENT ============
+        // Find shortest path using BFS
+        function findShortestPath(startId, endId) {
+            if (startId === endId) return [startId];
+            
+            const queue = [[startId]];
+            const visited = new Set([startId]);
+            
+            while (queue.length > 0) {
+                const path = queue.shift();
+                const currentId = path[path.length - 1];
+                const currentLocation = fuyukiMapData[currentId];
+                
+                if (!currentLocation) continue;
+                
+                for (const neighborId of currentLocation.connections) {
+                    if (neighborId === endId) {
+                        return [...path, neighborId];
+                    }
+                    
+                    if (!visited.has(neighborId)) {
+                        visited.add(neighborId);
+                        queue.push([...path, neighborId]);
+                    }
+                }
+            }
+            
+            return null; // No path found
+        }
+        
+        // Check if two locations are directly connected
+        function areLocationsAdjacent(locId1, locId2) {
+            const loc1 = fuyukiMapData[locId1];
+            if (!loc1) return false;
+            return loc1.connections.includes(locId2);
+        }
+        
+        // Get adjacent locations for a given location
+        function getAdjacentLocations(locationId) {
+            const location = fuyukiMapData[locationId];
+            if (!location) return [];
+            return location.connections.map(id => ({
+                id: id,
+                name: fuyukiMapData[id]?.name || id
+            }));
+        }
+        
+        // Pending path for confirmation
+        let pendingPath = null;
+        let pendingDestination = null;
+        
+        function moveToSelectedLocation() {
+            if (!currentModalLocationId) return;
+            
+            const targetLocation = fuyukiMapData[currentModalLocationId];
+            if (!targetLocation) return;
+            
+            const currentLocation = gameState.location;
+            
+            // Check if already at destination
+            if (currentLocation === currentModalLocationId) {
+                closeLocationModal();
+                return;
+            }
+            
+            // Check if directly adjacent
+            if (areLocationsAdjacent(currentLocation, currentModalLocationId)) {
+                // Direct movement allowed
+                closeLocationModal();
+                document.getElementById('actionInput').value = `前往${targetLocation.name}`;
+                submitAction();
+                return;
+            }
+            
+            // Not adjacent - calculate shortest path
+            const path = findShortestPath(currentLocation, currentModalLocationId);
+            
+            if (!path || path.length < 2) {
+                // No valid path found
+                closeLocationModal();
+                addStoryEntry('【系统】无法找到前往该地点的路径。', 'system');
+                return;
+            }
+            
+            // Close location modal first
+            closeLocationModal();
+            
+            // Store pending path info
+            pendingPath = path;
+            pendingDestination = currentModalLocationId;
+            
+            // Show path confirmation modal
+            showPathConfirmModal(path, targetLocation.name);
+        }
+        
+        function showPathConfirmModal(path, destinationName) {
+            const modal = document.getElementById('pathConfirmModal');
+            const textEl = document.getElementById('pathConfirmText');
+            const pathEl = document.getElementById('pathConfirmPath');
+            
+            // Get location names for the path
+            const pathNames = path.map(id => fuyukiMapData[id]?.name || id);
+            const nextStep = pathNames[1]; // First step after current location
+            
+            // Set text
+            textEl.innerHTML = `
+                目标地点 <strong style="color: var(--magic-blue);">${destinationName}</strong> 无法直接前往。<br>
+                需要经过 <strong style="color: var(--primary-gold);">${path.length - 1}</strong> 个地点。<br>
+                下一站: <strong style="color: var(--hp-green);">${nextStep}</strong>
+            `;
+            
+            // Build path visualization
+            let pathHtml = '';
+            path.forEach((locId, index) => {
+                const locName = fuyukiMapData[locId]?.name || locId;
+                let nodeClass = 'path-node';
+                
+                if (index === 0) {
+                    nodeClass += ' current';
+                } else if (index === 1) {
+                    nodeClass += ' next';
+                } else if (index === path.length - 1) {
+                    nodeClass += ' destination';
+                }
+                
+                pathHtml += `<span class="${nodeClass}">${locName}</span>`;
+                
+                if (index < path.length - 1) {
+                    pathHtml += '<span class="path-arrow">→</span>';
+                }
+            });
+            
+            pathEl.innerHTML = pathHtml;
+            
+            // Set confirm button action
+            const confirmBtn = document.getElementById('pathConfirmBtn');
+            confirmBtn.textContent = `前往 ${nextStep}`;
+            confirmBtn.onclick = () => confirmPathMovement();
+            
+            // Show modal
+            modal.classList.add('active');
+        }
+        
+        function confirmPathMovement() {
+            if (!pendingPath || pendingPath.length < 2) {
+                cancelPathConfirm();
+                return;
+            }
+            
+            const nextLocationId = pendingPath[1];
+            const nextLocation = fuyukiMapData[nextLocationId];
+            
+            // Close modal
+            document.getElementById('pathConfirmModal').classList.remove('active');
+            
+            // Execute movement
+            if (nextLocation) {
+                document.getElementById('actionInput').value = `前往${nextLocation.name}`;
+                submitAction();
+            }
+            
+            // Clear pending path
+            pendingPath = null;
+            pendingDestination = null;
+        }
+        
+        function cancelPathConfirm() {
+            document.getElementById('pathConfirmModal').classList.remove('active');
+            pendingPath = null;
+            pendingDestination = null;
+        }
+        
+        // Initialize map when container is visible
+        function initializeMapCanvas() {
+            const canvas = document.getElementById('mapCanvas');
+            const container = canvas ? canvas.parentElement : null;
+            
+            if (!canvas || !container) {
+                console.error('Map canvas or container not found');
+                return;
+            }
+            
+            // Check if container has valid dimensions
+            if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+                console.warn('Map container not visible yet, retrying...');
+                setTimeout(initializeMapCanvas, 100);
+                return;
+            }
+            
+            console.log('Initializing map canvas:', container.offsetWidth, 'x', container.offsetHeight);
+            
+            initializeMapPositions();
+            drawMapGraph();
+            
+            // Add event listeners (only once)
+            if (!canvas.hasAttribute('data-listeners-added')) {
+                canvas.setAttribute('data-listeners-added', 'true');
+                
+                canvas.addEventListener('click', handleMapClick);
+                canvas.addEventListener('mousemove', handleMapHover);
+                canvas.addEventListener('mouseleave', () => {
+                    selectedLocationId = null;
+                    canvas.style.cursor = 'default';
+                    drawMapGraph();
+                });
+                
+                // Redraw on resize
+                window.addEventListener('resize', () => {
+                    initializeMapPositions();
+                    drawMapGraph();
+                });
+                
+                // Start map animation for servant indicators
+                startMapAnimation();
+            }
+        }
+
+        function updateWarStatusUI() {
+            const container = document.getElementById('warStatusList');
+            container.innerHTML = '';
+            
+            STANDARD_CLASSES.forEach(cls => {
+                const status = gameState.warStatus[cls] || { status: 'alive', trueNameRevealed: false };
+                
+                const item = document.createElement('div');
+                item.className = 'war-status-item';
+                if (status.isPlayer) item.classList.add('player');
+                if (status.status === 'dead') item.classList.add('dead');
+                
+                const trueNameText = status.trueNameRevealed && status.knownTrueName 
+                    ? status.knownTrueName 
+                    : '???';
+                const trueNameClass = status.trueNameRevealed ? '' : 'unknown';
+                
+                item.innerHTML = `
+                    <img class="class-icon-small" src="${classIcons[cls] || classIcons['Saber']}" alt="${cls}">
+                    <div class="class-info">
+                        <div class="class-name-label">${cls}${status.isPlayer ? ' (Player)' : ''}</div>
+                        <div class="true-name-label ${trueNameClass}">${trueNameText}</div>
+                    </div>
+                    <div class="status-indicator ${status.status === 'dead' ? 'dead' : ''}"></div>
+                `;
+                
+                // Add click handler to open detail modal
+                item.onclick = () => openServantDetailModal(cls);
+                
+                container.appendChild(item);
+            });
+        }
+
+        function updateInventoryUI() {
+            const container = document.getElementById('inventoryGrid');
+            container.innerHTML = '';
+            
+            // Show 6 slots (3x2 grid)
+            for (let i = 0; i < 6; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'inventory-slot';
+                
+                if (i < gameState.inventory.length) {
+                    slot.textContent = gameState.inventory[i];
+                } else {
+                    slot.classList.add('empty');
+                }
+                
+                container.appendChild(slot);
+            }
+        }
+
+        // ============ STORY LOG FUNCTIONS ============
+        function addStoryEntry(content, type = 'narrative') {
+            const storyLog = document.getElementById('storyLog');
+            
+            const entry = document.createElement('div');
+            entry.className = 'story-entry ' + type;
+            
+            const timestamp = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            // Format content - handle dialogue and actions
+            let formattedContent = content
+                .replace(/「([^」]+)」/g, '<span class="dialogue">「$1」</span>')
+                .replace(/\*([^*]+)\*/g, '<span class="action">$1</span>')
+                .replace(/\n/g, '<br>');
+            
+            entry.innerHTML = `
+                <div class="timestamp">${timestamp}</div>
+                <div class="content">${formattedContent}</div>
+            `;
+            
+            storyLog.appendChild(entry);
+            storyLog.scrollTop = storyLog.scrollHeight;
+            
+            // Add to history
+            gameState.storyHistory.push({
+                type: type,
+                content: content,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Return the entry element for potential removal (e.g., loading indicators)
+            return entry;
+        }
+
+        // ============ ACTION HANDLING ============
+        // 构建 God View 用于发送给后端
+        function buildGodViewForAPI() {
+            // 如果已经有从 init_game 保存的 godView，直接使用它
+            if (godView) {
+                // 更新玩家位置和状态
+                const playerClass = gameState.servant.class;
+                
+                // 查找玩家在 all_combatants 中的 key
+                for (const [key, combatant] of Object.entries(godView.all_combatants || {})) {
+                    if (combatant.is_player) {
+                        combatant.current_location = gameState.location;
+                        combatant.servant.hp = gameState.servant.hp;
+                        combatant.servant.np_gauge = gameState.servant.np;
+                        break;
+                    }
+                }
+                
+                return {
+                    ...godView,
+                    turn_count: gameState.turnCount,
+                    time_phase: gameState.timePhase
+                };
+            }
+            
+            // 如果没有 godView（fallback），从 gameState 构建一个简化版本
+            const playerCharId = `${gameState.servant.class}_${gameState.servant.trueName}`;
+            
+            const godViewData = {
+                turn_count: gameState.turnCount,
+                time_phase: gameState.timePhase,
+                player_character_id: playerCharId,
+                
+                // 玩家从者
+                player_servant: {
+                    character_id: playerCharId,
+                    true_name: gameState.servant.trueName,
+                    display_name: gameState.servant.class,
+                    servant_class: gameState.servant.class,
+                    location_id: gameState.location,
+                    hp_current: gameState.servant.hp,
+                    hp_max: gameState.servant.maxHp,
+                    mp_current: gameState.master.mana * 100,
+                    mp_max: gameState.master.maxMana * 100,
+                    np_gauge: gameState.servant.np,
+                    parameters: gameState.servant.parameters,
+                    status_effects: [],
+                    health_status: 'healthy'
+                },
+                
+                // 玩家御主
+                player_master: {
+                    name: gameState.master.name,
+                    mana: gameState.master.mana,
+                    command_spells: gameState.master.commandSpells
+                },
+                
+                // NPC 状态 - 从 characters 对象构建
+                npc_states: {},
+                
+                // 地图使用默认配置（后端会填充）
+                location_graph: {},
+                
+                // 关系图谱
+                relationship_graph: {}
+            };
+            
+            // 添加 NPC 从者
+            Object.entries(characters).forEach(([charId, char]) => {
+                if (char.type !== 'player' && char.isAlive) {
+                    godViewData.npc_states[charId] = {
+                        character_id: charId,
+                        true_name: char.servantName || '???',
+                        display_name: char.servantClass,
+                        servant_class: char.servantClass,
+                        location_id: char.location,
+                        hp_current: 15000,
+                        hp_max: 15000,
+                        mp_current: 10000,
+                        mp_max: 10000,
+                        np_gauge: 0,
+                        parameters: {},
+                        status_effects: [],
+                        health_status: 'healthy',
+                        ai_personality: char.personality || '',
+                        ai_context: {
+                            goal: 'win the Holy Grail War',
+                            memory: char.memories || [],
+                            known_intel: {},
+                            current_stance_towards_others: {}
+                        }
+                    };
+                }
+            });
+            
+            return godViewData;
+        }
+        
+        // Submit player action - 调用后端 API 获取叙事
+        async function submitAction() {
+            const input = document.getElementById('actionInput');
+            const submitBtn = document.getElementById('submitBtn');
+            const action = input.value.trim();
+            
+            if (!action) {
+                input.classList.add('warning');
+                setTimeout(() => input.classList.remove('warning'), 1000);
+                return;
+            }
+            
+            // Add player action to story
+            addStoryEntry(action, 'player-action');
+            
+            // Clear input immediately
+            const actionText = action;
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Disable submit button during request
+            submitBtn.disabled = true;
+            submitBtn.textContent = '处理中...';
+            
+            // Build player action object
+            const playerAction = {
+                type: 'text',
+                message: actionText,
+                raw_input: actionText,
+                use_command_spell: pendingCommandSpell
+            };
+            
+            // Reset command spell flag
+            if (pendingCommandSpell) {
+                pendingCommandSpell = false;
+                input.placeholder = '请输入行动...';
+                input.classList.remove('warning');
+                
+                // Consume command spell
+                if (gameState.master.commandSpells > 0) {
+                    gameState.master.commandSpells--;
+                    updateCommandSpellsUI();
+                }
+            }
+            
+            try {
+                // Show loading indicator in story log
+                const loadingEntry = addStoryEntry('*正在处理行动...*', 'system');
+                
+                // Build god view for API
+                const godViewData = buildGodViewForAPI();
+                
+                console.log('[submitAction] Sending request to /api/game_turn');
+                console.log('[submitAction] God View:', godViewData);
+                console.log('[submitAction] Player Action:', playerAction);
+                
+                // Call the game turn API
+                const response = await fetch(`${API_BASE_URL}/api/game_turn`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        godView: godViewData,
+                        playerAction: playerAction
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('[submitAction] Response:', result);
+                
+                // Remove loading entry
+                if (loadingEntry && loadingEntry.parentNode) {
+                    loadingEntry.parentNode.removeChild(loadingEntry);
+                }
+                
+                if (result.success) {
+                    // Display main story narrative
+                    if (result.mainStory) {
+                        addStoryEntry(result.mainStory, 'narrative');
+                    }
+                    
+                    // Display side intel from other locations
+                    if (result.sideIntel && result.sideIntel.length > 0) {
+                        displaySideIntel(result.sideIntel);
+                    }
+                    
+                    // Apply state updates
+                    if (result.stateUpdates) {
+                        applyStateUpdates(result.stateUpdates);
+                    }
+                    
+                    // Process character updates (intents and memories)
+                    if (result.characterUpdates) {
+                        processCharacterUpdates(result.characterUpdates);
+                    }
+                    
+                    // Process location histories
+                    if (result.locationHistories) {
+                        processLocationHistories(result.locationHistories);
+                    }
+                    
+                    // Update map visuals if provided
+                    if (result.mapVisuals) {
+                        updateMapVisuals(result.mapVisuals);
+                    }
+                    
+                    // Increment turn counter
+                    gameState.turnCount++;
+                    
+                } else {
+                    // Show error
+                    addStoryEntry(`【系统错误】${result.error || '请求处理失败'}`, 'system');
+                }
+                
+            } catch (error) {
+                console.error('[submitAction] Error:', error);
+                addStoryEntry(`【系统错误】网络请求失败: ${error.message}`, 'system');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '发送';
+                input.focus();
+            }
+        }
+        
+        // Display side intel from other locations - now adds to location history
+        function displaySideIntel(sideIntelList) {
+            // Add each side intel item to the corresponding location's history
+            sideIntelList.forEach(intel => {
+                const locationId = intel.location_id;
+                
+                if (!locationId) {
+                    console.warn('[displaySideIntel] Intel missing location_id:', intel);
+                    return;
+                }
+                
+                // Get location name
+                const locationName = intel.location_name ||
+                    (fuyukiMapData[locationId] ? fuyukiMapData[locationId].name : locationId);
+                
+                // Build the content string with badge info
+                const badgeText = intel.is_combat ? '【战斗】' : '【动态】';
+                let content = `${badgeText} ${intel.text}`;
+                
+                // Add characters involved if present
+                if (intel.characters_involved && intel.characters_involved.length > 0) {
+                    content += ` (在场: ${intel.characters_involved.join(', ')})`;
+                }
+                
+                // Add to the location's history
+                addLocationHistory(
+                    locationId,
+                    content,
+                    gameState.turnCount,
+                    intel.is_combat || intel.level === 'urgent' || intel.level === 'warning', // isDetailed for important events
+                    intel.characters_involved || []
+                );
+                
+                // Also add to intel notes for quick reference
+                addIntel(`【${locationName}】${intel.text}`, intel.is_combat);
+                
+                console.log(`[displaySideIntel] Added to ${locationId} history:`, content);
+            });
+        }
+        
+        // Apply state updates from API response
+        function applyStateUpdates(updates) {
+            console.log('[applyStateUpdates] Applying:', updates);
+            
+            // Update turn
+            if (updates.turn !== undefined) {
+                gameState.turnCount = updates.turn;
+            }
+            
+            // Update time phase
+            if (updates.time_phase) {
+                gameState.timePhase = updates.time_phase;
+                updateTimeDisplay();
+            }
+            
+            // Update player state
+            if (updates.player) {
+                if (updates.player.location) {
+                    const oldLocation = gameState.location;
+                    gameState.location = updates.player.location;
+                    
+                    // Also update player character location
+                    if (characters.player) {
+                        characters.player.location = updates.player.location;
+                    }
+                    
+                    // Update godView if available
+                    if (godView && godView.all_combatants) {
+                        for (const [key, combatant] of Object.entries(godView.all_combatants)) {
+                            if (combatant.is_player) {
+                                combatant.current_location = updates.player.location;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    updateLocationDisplay();
+                    
+                    // Show movement notification if player moved
+                    if (updates.player.moved && updates.player.previous_location) {
+                        const oldName = fuyukiMapData[updates.player.previous_location]?.name || updates.player.previous_location;
+                        const newName = fuyukiMapData[updates.player.location]?.name || updates.player.location;
+                        addIntel(`你从${oldName}移动到了${newName}`, false);
+                    }
+                }
+                
+                if (updates.player.hp !== undefined) {
+                    gameState.servant.hp = updates.player.hp;
+                    updateServantStatus();
+                }
+                
+                if (updates.player.np !== undefined) {
+                    gameState.servant.np = updates.player.np;
+                    updateServantStatus();
+                }
+                
+                if (updates.player.mana !== undefined) {
+                    gameState.master.mana = updates.player.mana;
+                    updateMasterStatus();
+                }
+            }
+            
+            // Handle NPC movements
+            if (updates.npc_movements) {
+                Object.entries(updates.npc_movements).forEach(([charId, newLocation]) => {
+                    console.log(`[applyStateUpdates] NPC ${charId} moved to ${newLocation}`);
+                    
+                    // Update character location
+                    for (const [id, char] of Object.entries(characters)) {
+                        if (id === charId || char.id === charId) {
+                            const oldLocation = char.location;
+                            char.location = newLocation;
+                            
+                            // Log the movement
+                            const charName = char.servantClass || charId;
+                            const oldName = fuyukiMapData[oldLocation]?.name || oldLocation;
+                            const newName = fuyukiMapData[newLocation]?.name || newLocation;
+                            console.log(`[NPC Movement] ${charName}: ${oldName} → ${newName}`);
+                            
+                            // Add to side intel
+                            addIntel(`${charName}从${oldName}移动到了${newName}`, false);
+                            break;
+                        }
+                    }
+                    
+                    // Update godView if available
+                    if (godView && godView.all_combatants) {
+                        for (const [key, combatant] of Object.entries(godView.all_combatants)) {
+                            if (key === charId || combatant.servant?.true_name === charId) {
+                                combatant.current_location = newLocation;
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Handle defeated combatants
+            if (updates.defeated && updates.defeated.length > 0) {
+                updates.defeated.forEach(defeatedId => {
+                    // Update war status
+                    Object.entries(gameState.warStatus).forEach(([cls, status]) => {
+                        if (status.knownTrueName === defeatedId || cls === defeatedId) {
+                            status.status = 'dead';
+                        }
+                    });
+                    
+                    // Update characters
+                    Object.entries(characters).forEach(([charId, char]) => {
+                        if (charId === defeatedId || char.servantName === defeatedId) {
+                            char.isAlive = false;
+                        }
+                    });
+                });
+                
+                updateWarStatusUI();
+            }
+        }
+        
+        // Update map visuals based on activity
+        function updateMapVisuals(visuals) {
+            // Store current visuals for map rendering
+            if (!window.currentMapVisuals) {
+                window.currentMapVisuals = {};
+            }
+            
+            Object.assign(window.currentMapVisuals, visuals);
+            
+            // Redraw map to show activity indicators
+            if (mapCtx) {
+                drawMapGraph();
+            }
+        }
+
+        function quickAction(action) {
+            document.getElementById('actionInput').value = action;
+            submitAction();
+        }
+
+        function moveTo(locationId) {
+            document.getElementById('actionInput').value = `前往${locationNames[locationId] || locationId}`;
+            submitAction();
+        }
+
+        // ============ COMMAND SPELL SYSTEM ============
+        function useCommandSpell(index) {
+            if (index >= gameState.master.commandSpells) {
+                return; // Already used
+            }
+            
+            // Show confirmation modal
+            document.getElementById('commandSpellModal').classList.add('active');
+        }
+
+        function confirmCommandSpell() {
+            pendingCommandSpell = true;
+            document.getElementById('commandSpellModal').classList.remove('active');
+            
+            // Focus on input and add prompt
+            const input = document.getElementById('actionInput');
+            input.placeholder = '【令咒发动】请输入绝对命令...';
+            input.classList.add('warning');
+            input.focus();
+        }
+
+        function cancelCommandSpell() {
+            pendingCommandSpell = false;
+            document.getElementById('commandSpellModal').classList.remove('active');
+        }
+
+        // ============ NOBLE PHANTASM EFFECTS ============
+        function activateNoblePhantasm(name, ruby, imagePath) {
+            const overlay = document.getElementById('npOverlay');
+            const npImage = document.getElementById('npImage');
+            const npName = document.getElementById('npName');
+            const npRuby = document.getElementById('npRuby');
+            
+            // Use servant's image if no specific NP image
+            npImage.src = imagePath || gameState.servant.imagePath || '';
+            npName.textContent = name || '宝具解放';
+            npRuby.textContent = ruby || '';
+            
+            overlay.classList.add('active');
+            
+            // Auto-dismiss after 4 seconds
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 4000);
+            
+            // Click to dismiss
+            overlay.onclick = () => {
+                overlay.classList.remove('active');
+            };
+        }
+
+        // ============ INTEL SYSTEM ============
+        function addIntel(content, isImportant = false) {
+            const container = document.getElementById('intelNotes');
+            
+            const item = document.createElement('div');
+            item.className = 'intel-item' + (isImportant ? ' important' : '');
+            
+            const timeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            item.innerHTML = `
+                <div class="intel-time">${timeStr}</div>
+                ${content}
+            `;
+            
+            container.insertBefore(item, container.firstChild);
+            
+            // Keep only last 10 intel items
+            while (container.children.length > 10) {
+                container.removeChild(container.lastChild);
+            }
+            
+            // Add to state
+            gameState.intel.push({
+                content: content,
+                important: isImportant,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // ============ MODALS ============
+        function openHistory() {
+            const modal = document.getElementById('historyModal');
+            const content = document.getElementById('historyContent');
+            
+            content.innerHTML = '';
+            
+            // Show all story history
+            gameState.storyHistory.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'history-entry';
+                
+                const time = new Date(entry.timestamp).toLocaleString('zh-CN');
+                
+                div.innerHTML = `
+                    <div class="entry-time">${time}</div>
+                    <div class="entry-content">${entry.content}</div>
+                `;
+                
+                content.appendChild(div);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+
+        // ============ SERVANT DETAIL MODAL ============
+        function openServantDetailModal(servantClass) {
+            const status = gameState.warStatus[servantClass];
+            if (!status) return;
+            
+            // Find the character for this class
+            let charData = null;
+            for (const [id, char] of Object.entries(characters)) {
+                if (char.servantClass === servantClass ||
+                    (char.type === 'player' && gameState.servant.class === servantClass)) {
+                    charData = char;
+                    break;
+                }
+            }
+            
+            // Update modal content
+            document.getElementById('servantDetailClassIcon').src = classIcons[servantClass] || classIcons['Saber'];
+            document.getElementById('servantDetailClass').textContent = servantClass;
+            
+            // True name
+            const nameEl = document.getElementById('servantDetailName');
+            if (status.trueNameRevealed && status.knownTrueName) {
+                nameEl.textContent = status.knownTrueName;
+                nameEl.classList.add('revealed');
+            } else {
+                nameEl.textContent = '真名未知';
+                nameEl.classList.remove('revealed');
+            }
+            
+            // Status
+            const statusEl = document.getElementById('servantDetailStatus');
+            statusEl.className = 'servant-detail-status';
+            if (status.status === 'dead') {
+                statusEl.classList.add('dead');
+                statusEl.innerHTML = `
+                    <div class="servant-detail-status-dot"></div>
+                    <span class="servant-detail-status-text">已败退</span>
+                `;
+            } else if (status.isPlayer) {
+                statusEl.classList.add('alive');
+                statusEl.innerHTML = `
+                    <div class="servant-detail-status-dot"></div>
+                    <span class="servant-detail-status-text">存活 (玩家从者)</span>
+                `;
+            } else {
+                statusEl.classList.add('alive');
+                statusEl.innerHTML = `
+                    <div class="servant-detail-status-dot"></div>
+                    <span class="servant-detail-status-text">存活</span>
+                `;
+            }
+            
+            // Master
+            const masterEl = document.getElementById('servantDetailMaster');
+            if (charData && charData.masterName) {
+                masterEl.textContent = charData.masterName;
+            } else if (status.isPlayer) {
+                masterEl.textContent = gameState.master.name;
+            } else {
+                masterEl.textContent = '未知';
+            }
+            
+            // Location
+            const locationEl = document.getElementById('servantDetailLocation');
+            if (charData && charData.location) {
+                const locData = fuyukiMapData[charData.location];
+                const locName = locData ? locData.name : charData.location;
+                locationEl.textContent = locName;
+                locationEl.classList.remove('unknown');
+                locationEl.onclick = () => {
+                    closeServantDetailModal();
+                    openLocationModal(charData.location);
+                };
+            } else if (status.isPlayer) {
+                const locData = fuyukiMapData[gameState.location];
+                const locName = locData ? locData.name : gameState.location;
+                locationEl.textContent = locName;
+                locationEl.classList.remove('unknown');
+                locationEl.onclick = () => {
+                    closeServantDetailModal();
+                    openLocationModal(gameState.location);
+                };
+            } else {
+                locationEl.textContent = '位置未知';
+                locationEl.classList.add('unknown');
+                locationEl.onclick = null;
+            }
+            
+            // Intel
+            const intelEl = document.getElementById('servantDetailIntel');
+            if (status.knownInfo && status.knownInfo.length > 0) {
+                let intelHtml = '';
+                status.knownInfo.forEach(info => {
+                    intelHtml += `<div class="servant-detail-intel-item">${info}</div>`;
+                });
+                intelEl.innerHTML = intelHtml;
+            } else {
+                intelEl.innerHTML = '<div class="servant-detail-intel-empty">暂无收集到的情报...</div>';
+            }
+            
+            // Parameters (only for player's servant)
+            const paramsSection = document.getElementById('servantDetailParametersSection');
+            const paramsEl = document.getElementById('servantDetailParameters');
+            if (status.isPlayer && gameState.servant.parameters) {
+                paramsSection.style.display = 'block';
+                const params = gameState.servant.parameters;
+                paramsEl.innerHTML = `
+                    <div class="servant-detail-param">
+                        <div class="servant-detail-param-label">筋力</div>
+                        <div class="servant-detail-param-value">${params.strength}</div>
+                    </div>
+                    <div class="servant-detail-param">
+                        <div class="servant-detail-param-label">耐久</div>
+                        <div class="servant-detail-param-value">${params.endurance}</div>
+                    </div>
+                    <div class="servant-detail-param">
+                        <div class="servant-detail-param-label">敏捷</div>
+                        <div class="servant-detail-param-value">${params.agility}</div>
+                    </div>
+                    <div class="servant-detail-param">
+                        <div class="servant-detail-param-label">魔力</div>
+                        <div class="servant-detail-param-value">${params.mana}</div>
+                    </div>
+                    <div class="servant-detail-param">
+                        <div class="servant-detail-param-label">幸运</div>
+                        <div class="servant-detail-param-value">${params.luck}</div>
+                    </div>
+                    <div class="servant-detail-param">
+                        <div class="servant-detail-param-label">宝具</div>
+                        <div class="servant-detail-param-value">${params.np}</div>
+                    </div>
+                `;
+            } else {
+                paramsSection.style.display = 'none';
+            }
+            
+            // Show modal
+            document.getElementById('servantDetailModal').classList.add('active');
+        }
+        
+        function closeServantDetailModal() {
+            document.getElementById('servantDetailModal').classList.remove('active');
+        }
+
+        function openSettings() {
+            // TODO: Implement settings modal
+            alert('设置功能开发中...');
+        }
+
+        function saveGame() {
+            try {
+                const saveData = {
+                    version: '1.0',
+                    timestamp: new Date().toISOString(),
+                    gameState: gameState
+                };
+                
+                localStorage.setItem('hgw_save_' + gameState.gameId, JSON.stringify(saveData));
+                addStoryEntry('【系统】游戏已保存。', 'system');
+            } catch (error) {
+                console.error('Error saving game:', error);
+                addStoryEntry('【系统】保存失败：' + error.message, 'system');
+            }
+        }
+
+        // ============ INPUT HANDLING ============
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const input = document.getElementById('actionInput');
+                if (document.activeElement === input) {
+                    e.preventDefault();
+                    submitAction();
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                document.getElementById('commandSpellModal').classList.remove('active');
+                document.getElementById('npOverlay').classList.remove('active');
+                document.getElementById('historyModal').classList.remove('active');
+            }
+        });
+
+        // Auto-resize textarea
+        document.getElementById('actionInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            
+            // Check for debug secret code
+            if (this.value === 'debug信息') {
+                this.value = '';
+                openDebugModal();
+            }
+        });
+
+        // ============ DEBUG MODAL FUNCTIONS ============
+        let currentDebugTab = 'gameState';
+        
+        function openDebugModal() {
+            document.getElementById('debugModal').classList.add('active');
+            switchDebugTab('gameState');
+        }
+        
+        function closeDebugModal() {
+            document.getElementById('debugModal').classList.remove('active');
+        }
+        
+        function switchDebugTab(tabName) {
+            currentDebugTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.debug-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Render content based on tab
+            const body = document.getElementById('debugModalBody');
+            
+            switch(tabName) {
+                case 'gameState':
+                    body.innerHTML = renderGameStateDebug();
+                    break;
+                case 'map':
+                    body.innerHTML = renderMapDebug();
+                    break;
+                case 'history':
+                    body.innerHTML = renderHistoryDebug();
+                    break;
+            }
+        }
+        
+        function formatJsonHtml(obj, indent = 0) {
+            if (obj === null) return '<span class="null">null</span>';
+            if (obj === undefined) return '<span class="null">undefined</span>';
+            
+            const type = typeof obj;
+            
+            if (type === 'string') {
+                return `<span class="string">"${escapeHtml(obj)}"</span>`;
+            }
+            if (type === 'number') {
+                return `<span class="number">${obj}</span>`;
+            }
+            if (type === 'boolean') {
+                return `<span class="boolean">${obj}</span>`;
+            }
+            
+            if (Array.isArray(obj)) {
+                if (obj.length === 0) return '[]';
+                const spaces = '  '.repeat(indent);
+                const innerSpaces = '  '.repeat(indent + 1);
+                let result = '[\n';
+                obj.forEach((item, index) => {
+                    result += innerSpaces + formatJsonHtml(item, indent + 1);
+                    if (index < obj.length - 1) result += ',';
+                    result += '\n';
+                });
+                result += spaces + ']';
+                return result;
+            }
+            
+            if (type === 'object') {
+                const keys = Object.keys(obj);
+                if (keys.length === 0) return '{}';
+                const spaces = '  '.repeat(indent);
+                const innerSpaces = '  '.repeat(indent + 1);
+                let result = '{\n';
+                keys.forEach((key, index) => {
+                    result += innerSpaces + `<span class="key">"${escapeHtml(key)}"</span>: `;
+                    result += formatJsonHtml(obj[key], indent + 1);
+                    if (index < keys.length - 1) result += ',';
+                    result += '\n';
+                });
+                result += spaces + '}';
+                return result;
+            }
+            
+            return String(obj);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function copyToClipboard(data) {
+            const text = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已复制到剪贴板！');
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+        
+        function renderGameStateDebug() {
+            return `
+                <div class="debug-section">
+                    <div class="debug-section-title">📊 基本游戏状态</div>
+                    <button class="debug-copy-btn" onclick="copyToClipboard(gameState)">📋 复制全部</button>
+                    <table class="debug-table">
+                        <tr><th>属性</th><th>值</th></tr>
+                        <tr><td>Game ID</td><td>${gameState.gameId || 'N/A'}</td></tr>
+                        <tr><td>Day</td><td>${gameState.day}</td></tr>
+                        <tr><td>Time Phase</td><td>${gameState.timePhase}</td></tr>
+                        <tr><td>Location</td><td>${gameState.location}</td></tr>
+                        <tr><td>Objective</td><td>${gameState.objective}</td></tr>
+                    </table>
+                </div>
+                
+                <div class="debug-section">
+                    <div class="debug-section-title">👤 御主状态 (Master)</div>
+                    <div class="debug-json">${formatJsonHtml(gameState.master)}</div>
+                </div>
+                
+                <div class="debug-section">
+                    <div class="debug-section-title">⚔️ 从者状态 (Servant)</div>
+                    <div class="debug-json">${formatJsonHtml(gameState.servant)}</div>
+                </div>
+                
+                <div class="debug-section">
+                    <div class="debug-section-title">🏆 圣杯战争状态 (War Status)</div>
+                    <div class="debug-json">${formatJsonHtml(gameState.warStatus)}</div>
+                </div>
+                
+                <div class="debug-section">
+                    <div class="debug-section-title">🎒 持有物品 (Inventory)</div>
+                    <div class="debug-json">${formatJsonHtml(gameState.inventory)}</div>
+                </div>
+                
+                <div class="debug-section">
+                    <div class="debug-section-title">📝 情报列表 (Intel)</div>
+                    <div class="debug-json">${formatJsonHtml(gameState.intel)}</div>
+                </div>
+            `;
+        }
+        
+        function renderMapDebug() {
+            return `
+                <div class="debug-section">
+                    <div class="debug-section-title">🗺️ 当前位置</div>
+                    <table class="debug-table">
+                        <tr><th>属性</th><th>值</th></tr>
+                        <tr><td>Location ID</td><td>${gameState.location}</td></tr>
+                        <tr><td>Display Name</td><td>${locationNames[gameState.location] || gameState.location}</td></tr>
+                    </table>
+                </div>
+                
+                <div class="debug-section">
+                    <div class="debug-section-title">📍 冬木市地图数据</div>
+                    <button class="debug-copy-btn" onclick="copyToClipboard(fuyukiMapData)">📋 复制全部</button>
+                    <div class="debug-json">${formatJsonHtml(fuyukiMapData)}</div>
+                </div>
+            `;
+        }
+        
+        function renderHistoryDebug() {
+            return `
+                <div class="debug-section">
+                    <div class="debug-section-title">📜 故事历史记录 (${gameState.storyHistory.length} 条)</div>
+                    <button class="debug-copy-btn" onclick="copyToClipboard(gameState.storyHistory)">📋 复制全部</button>
+                    <div class="debug-json">${formatJsonHtml(gameState.storyHistory)}</div>
+                </div>
+            `;
+        }
+        
+        // Close location modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLocationModal();
+                closeDebugModal();
+                closeServantDetailModal();
+                cancelPathConfirm();
+            }
+        });
+        
+        // Close debug modal when clicking outside
+        document.getElementById('debugModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDebugModal();
+            }
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('locationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLocationModal();
+            }
+        });
+        
+        // Close servant detail modal when clicking outside
+        document.getElementById('servantDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeServantDetailModal();
+            }
+        });
+        
+        // Close path confirm modal when clicking outside
+        document.getElementById('pathConfirmModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cancelPathConfirm();
+            }
+        });
+    </script>
+</body>
+</html>

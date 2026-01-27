@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.git
+.gitignore
+.vscode
+*.log
+# 忽略大文件目录，通过 volume 挂载
+chara/
+class_image/
