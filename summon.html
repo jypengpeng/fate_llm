@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英灵召唤系统 - Fate 同人游戏</title>
+    <title>英灵召唤</title>
     <style>
         /* CSS Variables for theming */
         :root {
@@ -1394,9 +1394,74 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            .container {
+                padding: 18px 12px;
+            }
+
+            .header {
+                margin-bottom: 18px;
+            }
+
             .header h1 {
-                font-size: 2rem;
-                letter-spacing: 6px;
+                font-size: 1.65rem;
+                letter-spacing: 2px;
+                margin-bottom: 8px;
+            }
+
+            .header .subtitle {
+                font-size: 0.72rem;
+                letter-spacing: 1px;
+            }
+
+            .progress-bar {
+                margin-bottom: 22px;
+            }
+
+            .progress-line {
+                width: 30px;
+            }
+
+            .step-section {
+                padding: 18px 14px;
+            }
+
+            .step-header {
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+
+            .step-number {
+                width: 40px;
+                height: 40px;
+                margin-right: 8px;
+                font-size: 1.1rem;
+            }
+
+            .step-title {
+                font-size: 1.2rem;
+                letter-spacing: 1px;
+            }
+
+            .step-subtitle {
+                margin-left: 0;
+                font-size: 0.8rem;
+                letter-spacing: 1px;
+            }
+
+            .story-block {
+                padding: 14px 16px;
+            }
+
+            .form-textarea {
+                min-height: 120px;
+                padding: 14px;
+            }
+
+            .form-input,
+            .form-textarea,
+            .action-input {
+                font-size: 16px;
             }
 
             .preset-buttons {
@@ -1410,52 +1475,107 @@
 
             .class-btn {
                 min-width: 100%;
+                padding: 14px 12px;
+            }
+
+            .nav-buttons {
+                margin-top: 20px;
+                gap: 10px;
             }
 
             .nav-btn {
-                padding: 14px 30px;
-                font-size: 1rem;
+                flex: 1;
+                padding: 12px 10px;
+                font-size: 0.95rem;
+                letter-spacing: 1px;
             }
 
             .summon-btn {
-                padding: 20px 50px;
-                font-size: 1.3rem;
-                letter-spacing: 6px;
+                width: 100%;
+                padding: 16px 20px;
+                font-size: 1.12rem;
+                letter-spacing: 2px;
             }
 
-            .progress-line {
-                width: 35px;
-            }
-
-            .story-block {
-                padding: 15px 20px;
+            .summon-animation {
+                width: 220px;
+                height: 220px;
+                border-width: 2px;
             }
 
             .summon-text {
-                font-size: 1.2rem;
+                margin-top: 30px;
+                font-size: 1.05rem;
+                letter-spacing: 1px;
+                line-height: 1.65;
+            }
+
+            .summon-ready-text {
+                margin-bottom: 30px;
+            }
+
+            .summon-ready-text h3 {
+                font-size: 1.35rem;
                 letter-spacing: 2px;
+            }
+
+            .summon-ready-text p {
+                font-size: 0.92rem;
+                letter-spacing: 1px;
+            }
+
+            .voice-page-nav {
+                padding: 10px 12px;
+                gap: 8px;
             }
 
             .voice-page-main {
                 flex-direction: column;
-                padding: 15px;
-                gap: 15px;
+                padding: 12px;
+                gap: 12px;
+                min-height: auto;
             }
 
             .servant-display-left {
                 flex: none;
-                min-height: 200px;
-                max-height: 35vh;
+                min-height: 0;
+                max-height: none;
+            }
+
+            .servant-image-glow {
+                width: min(65vw, 300px);
+                height: min(65vw, 300px);
             }
 
             .servant-display-left img {
-                max-height: 100%;
+                width: 100%;
+                max-height: 42vh;
             }
 
             .servant-data-right {
+                gap: 10px;
                 padding-right: 0;
                 max-height: none;
                 overflow-y: visible;
+            }
+
+            .servant-header-box,
+            .stats-box,
+            .np-box,
+            .profile-box,
+            .dialogue-box {
+                padding: 14px 16px;
+            }
+
+            .servant-main-name {
+                font-size: 1.35rem;
+                letter-spacing: 2px;
+                word-break: break-word;
+            }
+
+            .class-name {
+                font-size: 1rem;
+                letter-spacing: 1px;
             }
 
             #radarChart {
@@ -1464,30 +1584,113 @@
             }
 
             .bottom-interaction {
-                padding: 15px;
+                padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+            }
+
+            .dialogue-box {
+                margin: 0 auto 12px;
+            }
+
+            .dialogue-speaker {
+                font-size: 1rem;
+                letter-spacing: 1px;
+            }
+
+            .dialogue-content {
+                font-size: 1rem;
+                line-height: 1.7;
             }
 
             .action-section {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 10px;
             }
 
             .action-label {
-                text-align: center;
+                text-align: left;
+                white-space: normal;
+                font-size: 0.9rem;
+                letter-spacing: 1px;
             }
 
-            .voice-page-nav {
-                padding: 10px 15px;
+            .action-submit-btn {
+                width: 100%;
+                padding: 12px 18px;
             }
 
             .story-page {
-                padding: 20px;
-                max-height: 50vh;
+                padding: 16px;
+                min-height: 260px;
+                max-height: none;
+            }
+
+            .story-content {
+                font-size: 1rem;
+                line-height: 1.9;
+                letter-spacing: 0.5px;
+            }
+
+            .page-navigation {
+                gap: 10px;
+            }
+
+            .page-nav-btn {
+                padding: 10px 14px;
+                letter-spacing: 1px;
             }
         }
 
-        /* Additional responsive for very small screens */
-        @media (max-height: 700px) {
+        @media (max-width: 480px) {
+            .progress-dot {
+                width: 36px;
+                height: 36px;
+                font-size: 0.85rem;
+            }
+
+            .progress-line {
+                width: 20px;
+            }
+
+            .story-text {
+                font-size: 0.92rem;
+                line-height: 1.7;
+                padding-left: 10px;
+            }
+
+            .form-label {
+                font-size: 0.92rem;
+                letter-spacing: 1px;
+            }
+
+            .summary-section {
+                padding: 14px;
+                margin-bottom: 20px;
+            }
+
+            .summary-title {
+                font-size: 0.92rem;
+                letter-spacing: 1px;
+            }
+
+            .voice-page-nav .page-nav-btn,
+            .voice-page-nav .page-indicator {
+                font-size: 0.78rem;
+            }
+
+            .servant-sub-info,
+            .profile-text,
+            .np-description {
+                font-size: 0.88rem;
+            }
+
+            .action-input::placeholder {
+                font-size: 0.92rem;
+            }
+        }
+
+        /* Additional responsive for very small desktop heights */
+        @media (min-width: 769px) and (max-height: 700px) {
             .voice-page-main {
                 padding: 10px 20px;
             }
@@ -2644,9 +2847,101 @@
             }
         }
 
-        // Navigate to game.html
+        // Keep the original button text, but show worldview notice dialog instead of navigating
         function enterSingularity() {
-            window.location.href = 'game.html';
+            showStageConstructionDialog();
+        }
+
+        // Show stage construction dialog (replaces direct navigation)
+        function showStageConstructionDialog() {
+            const dialogOverlay = document.createElement('div');
+            dialogOverlay.id = 'stageConstructionDialog';
+            dialogOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.95);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 2100;
+                animation: fadeIn 0.5s ease;
+                padding: 24px;
+            `;
+
+            const dialogContent = document.createElement('div');
+            dialogContent.style.cssText = `
+                width: min(900px, 95vw);
+                text-align: center;
+                padding: 44px 38px;
+                background: linear-gradient(145deg, rgba(13, 13, 20, 0.98), rgba(5, 5, 15, 0.99));
+                border: 2px solid var(--primary-gold);
+                border-radius: 12px;
+                box-shadow: 0 0 50px rgba(212, 175, 55, 0.28);
+                position: relative;
+            `;
+
+            dialogContent.innerHTML = `
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--primary-gold), transparent);"></div>
+
+                <div style="font-size: 1.6rem; color: var(--primary-gold); letter-spacing: 4px; margin-bottom: 28px; text-shadow: 0 0 20px rgba(212, 175, 55, 0.45);">
+                    ⟐ 境界壁未降下：舞台构筑中 ⟐
+                </div>
+
+                <div style="color: var(--text-secondary); font-size: 1.05rem; line-height: 2.05; text-align: left; max-width: 760px; margin: 0 auto 30px auto;">
+                    契约已然缔结。传说中的英灵正伫立于你的眼前，等待着你的第一道指令。<br>
+                    然而，当你正准备推开魔术工房的大门，踏上圣杯战争的战场时——<br>
+                    却发现工房之外的世界，宛如一张被冻结的白纸。<br><br>
+
+                    降灵仪式已臻于完美。只是此刻的大圣杯，正于地脉深处缓慢编织着战争的基盘。<br>
+                    这座名为冬木的『舞台』，其世界纹理尚未构筑完毕。<br><br>
+
+                    <span style="color: var(--primary-gold);">“——前方的剪定事象仍在演算中（后续主线剧情开发中）。”</span><br><br>
+
+                    在幕布正式拉开之前，你与从者的契约将被暂时封存在英灵之座。<br>
+                    珍惜这开战前短暂的宁静吧。
+                </div>
+
+                <div style="color: rgba(138, 138, 154, 0.7); font-size: 0.92rem; letter-spacing: 2px; margin-bottom: 18px;">[ -------------------------------- ]</div>
+
+                <button id="observeOtherPossibilityBtn" style="
+                    padding: 16px 54px;
+                    font-size: 1.08rem;
+                    font-family: inherit;
+                    background: linear-gradient(135deg, var(--primary-gold), #8b6914);
+                    border: none;
+                    border-radius: 6px;
+                    color: var(--dark-bg);
+                    cursor: pointer;
+                    letter-spacing: 3px;
+                    font-weight: bold;
+                    transition: all 0.3s ease;
+                ">
+                    ⟐ 观测其他可能性 ⟐
+                </button>
+
+                <div style="color: rgba(138, 138, 154, 0.7); font-size: 0.92rem; letter-spacing: 2px; margin-top: 18px;">[ -------------------------------- ]</div>
+            `;
+
+            dialogOverlay.appendChild(dialogContent);
+            document.body.appendChild(dialogOverlay);
+
+            const observeBtn = document.getElementById('observeOtherPossibilityBtn');
+            observeBtn.addEventListener('mouseenter', () => {
+                observeBtn.style.transform = 'scale(1.05)';
+                observeBtn.style.boxShadow = '0 0 30px rgba(212, 175, 55, 0.45)';
+            });
+            observeBtn.addEventListener('mouseleave', () => {
+                observeBtn.style.transform = 'scale(1)';
+                observeBtn.style.boxShadow = 'none';
+            });
+
+            observeBtn.addEventListener('click', () => {
+                resetToStart();
+            });
         }
 
         // ============ PAGINATION LOGIC ============
@@ -3016,8 +3311,8 @@
             return lines;
         }
 
-        // API endpoint for summoning
-        const API_BASE_URL = 'http://localhost:5000';
+        // API endpoint for summoning (same-origin for public deployment)
+        const API_BASE_URL = window.location.origin;
         
         // Store the summoned servant name globally
         let summonedServantName = '';
@@ -3091,6 +3386,14 @@
             }
             
             if (data.success) {
+                console.group('[Summon Debug] /api/summon response');
+                console.log('Extract method:', data.extractMethod);
+                console.log('Validation matched:', data.validationMatched);
+                console.log('Raw candidate:', data.rawCandidate);
+                console.log('Servant name:', data.servantName);
+                console.log('LLM raw response:', data.llmRawResponse);
+                console.log('Full payload:', data);
+                console.groupEnd();
                 return { servantName: data.servantName };
             } else {
                 // Build complete error message
@@ -3794,6 +4097,13 @@
                 setTimeout(() => dialog.remove(), 500);
             }
 
+            // Remove stage construction dialog if present
+            const stageDialog = document.getElementById('stageConstructionDialog');
+            if (stageDialog) {
+                stageDialog.style.animation = 'fadeOut 0.35s ease';
+                setTimeout(() => stageDialog.remove(), 350);
+            }
+
             // Hide summon overlay
             const overlay = document.getElementById('summonOverlay');
             overlay.classList.remove('active');
@@ -3803,11 +4113,36 @@
             storyResult.classList.remove('active');
 
             // Reset all form inputs
-            document.getElementById('masterIntro').value = '';
-            document.getElementById('relic').value = '';
-            document.getElementById('vowText').value = '';
-            document.getElementById('extraText').value = '';
-            document.getElementById('playerActionInput').value = '';
+            const masterIntroEl = document.getElementById('masterIntro');
+            const relicEl = document.getElementById('relic');
+            const vowTextEl = document.getElementById('vowText');
+            const extraTextEl = document.getElementById('extraText');
+            const playerActionInputEl = document.getElementById('playerActionInput');
+            if (masterIntroEl) masterIntroEl.value = '';
+            if (relicEl) relicEl.value = '';
+            if (vowTextEl) vowTextEl.value = '';
+            if (extraTextEl) extraTextEl.value = '';
+            if (playerActionInputEl) playerActionInputEl.value = '';
+
+            // Restore bottom action section if it was replaced by "进入特异点" button
+            const actionSection = document.querySelector('.action-section');
+            if (actionSection) {
+                actionSection.innerHTML = `
+                    <span class="action-label">接下来，你要做什么？</span>
+                    <input type="text" class="action-input" id="playerActionInput" placeholder="与英灵交谈、探索周围环境、询问圣杯战争的详情……">
+                    <button class="action-submit-btn" onclick="submitPlayerAction()">确认</button>
+                `;
+            }
+
+            // Reset reveal + runtime state
+            revealAnimationState = {
+                animationComplete: false,
+                llmResponseReceived: false,
+                servantData: null
+            };
+            servantDataForReveal = null;
+            summonedServantName = '';
+            generatedStoryData = null;
 
             // Clear all button selections
             document.querySelectorAll('.preset-btn.selected').forEach(btn => {

@@ -35,11 +35,21 @@
 
 2.  **配置 API Key**
     *   复制 `.env.example` 为 `.env`。
-    *   编辑 `.env` 文件，填入你的 LLM API 地址和 Key (支持 OpenAI, Claude, 或兼容的本地模型)。
+    *   编辑 `.env` 文件，填入你的 LLM API 地址和 Key（支持 OpenAI 兼容格式与 Gemini 格式）。
     ```ini
+    # 切换请求格式：openai | gemini
+    LLM_API_FORMAT=openai
+
+    # OpenAI 兼容格式
     LLM_API_URL=https://api.openai.com/v1/chat/completions
     LLM_API_KEY=your-sk-key
     LLM_MODEL_ID=gpt-4
+
+    # Gemini 格式示例（使用同一套变量）
+    # LLM_API_FORMAT=gemini
+    # LLM_API_URL=https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}
+    # LLM_API_KEY=your-gemini-key
+    # LLM_MODEL_ID=gemini-2.0-flash
     ```
 
 3.  **启动服务**

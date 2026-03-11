@@ -14,6 +14,7 @@ import re
 import uuid
 import requests
 import concurrent.futures
+from urllib.parse import quote
 from typing import Dict, List, Optional, Any, Tuple
 from dotenv import load_dotenv
 
@@ -38,6 +39,114 @@ load_dotenv()
 LLM_API_URL = os.getenv('LLM_API_URL', 'https://api.openai.com/v1/chat/completions')
 LLM_API_KEY = os.getenv('LLM_API_KEY', '')
 LLM_MODEL_ID = os.getenv('LLM_MODEL_ID', 'gpt-4')
+LLM_API_FORMAT = os.getenv('LLM_API_FORMAT', 'openai').strip().lower()
+
+
+def _get_llm_api_format() -> str:
+    """返回规范化的LLM API格式。"""
+    return 'gemini' if LLM_API_FORMAT == 'gemini' else 'openai'
+
+
+def _build_llm_headers() -> Dict[str, str]:
+    """构建当前LLM格式所需请求头。"""
+    if _get_llm_api_format() == 'gemini':
+        return {
+            'Content-Type': 'application/json'
+        }
+
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {LLM_API_KEY}'
+    }
+
+
+def _build_llm_url() -> str:
+    """构建当前LLM格式请求URL。"""
+    api_url = LLM_API_URL
+
+    if _get_llm_api_format() == 'gemini':
+        # 如果只配置了网关根路径，自动补全 Gemini generateContent 路径
+        if 'generateContent' not in api_url:
+            trimmed_url = api_url.rstrip('/')
+            api_url = f"{trimmed_url}/v1beta/models/{{model}}:generateContent"
+
+        api_url = api_url.replace('{model}', quote(LLM_MODEL_ID, safe=''))
+        api_url = api_url.replace('{api_key}', quote(LLM_API_KEY, safe=''))
+
+        if 'key=' not in api_url and '{api_key}' not in LLM_API_URL and LLM_API_KEY:
+            separator = '&' if '?' in api_url else '?'
+            api_url = f"{api_url}{separator}key={quote(LLM_API_KEY, safe='')}"
+
+    return api_url
+
+
+def _build_llm_payload(messages: List[Dict[str, str]], max_tokens: int, temperature: float) -> Dict[str, Any]:
+    """构建当前LLM格式请求体。"""
+    if _get_llm_api_format() == 'gemini':
+        system_messages: List[str] = []
+        contents: List[Dict[str, Any]] = []
+
+        for msg in messages:
+            role = (msg or {}).get('role', 'user')
+            content = (msg or {}).get('content', '')
+            if not isinstance(content, str):
+                content = json.dumps(content, ensure_ascii=False)
+
+            if role == 'system':
+                if content.strip():
+                    system_messages.append(content)
+                continue
+
+            gemini_role = 'model' if role == 'assistant' else 'user'
+            contents.append({
+                'role': gemini_role,
+                'parts': [{'text': content}]
+            })
+
+        if not contents:
+            contents = [{'role': 'user', 'parts': [{'text': ''}]}]
+
+        payload: Dict[str, Any] = {
+            'contents': contents,
+            'generationConfig': {
+                'temperature': temperature,
+                'maxOutputTokens': max_tokens
+            }
+        }
+
+        if system_messages:
+            payload['systemInstruction'] = {
+                'parts': [{'text': '\n'.join(system_messages)}]
+            }
+
+        return payload
+
+    return {
+        'model': LLM_MODEL_ID,
+        'messages': messages,
+        'temperature': temperature,
+        'max_tokens': max_tokens
+    }
+
+
+def _extract_text_from_llm_response(result: Dict[str, Any]) -> str:
+    """从当前LLM格式响应中提取文本。"""
+    if _get_llm_api_format() == 'gemini':
+        candidates = result.get('candidates', [])
+        if candidates:
+            content_obj = candidates[0].get('content', {})
+            parts = content_obj.get('parts', [])
+            text = ''.join(part.get('text', '') for part in parts if isinstance(part, dict)).strip()
+            if text:
+                return text
+        raise ValueError("Unexpected Gemini response format")
+
+    if 'choices' in result and len(result['choices']) > 0:
+        content = result['choices'][0].get('message', {}).get('content', '')
+        if isinstance(content, str):
+            return content.strip()
+
+    raise ValueError("Unexpected OpenAI-compatible response format")
 
 
 # 地点名称到ID的映射
@@ -140,29 +249,17 @@ def call_llm(messages: List[Dict[str, str]], max_tokens: int = 2000, temperature
     if not LLM_API_KEY:
         raise ValueError("LLM_API_KEY not configured")
     
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': messages,
-        'temperature': temperature,
-        'max_tokens': max_tokens
-    }
-    
     try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=120)
+        response = requests.post(
+            _build_llm_url(),
+            headers=_build_llm_headers(),
+            json=_build_llm_payload(messages, max_tokens=max_tokens, temperature=temperature),
+            timeout=120
+        )
         response.raise_for_status()
         
         result = response.json()
-        
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            return content.strip()
-        else:
-            raise ValueError("Unexpected LLM response format")
+        return _extract_text_from_llm_response(result)
             
     except requests.exceptions.RequestException as e:
         raise ValueError(f"LLM API request failed: {str(e)}")

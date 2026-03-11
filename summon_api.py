@@ -12,9 +12,12 @@ Fate Servant Summoning System Backend API
 import os
 import json
 import re
+import hashlib
+import threading
 import requests
 import concurrent.futures
 import asyncio
+from datetime import datetime, timezone
 from urllib.parse import quote
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -44,6 +47,172 @@ CORS(app)  # Enable CORS for frontend access
 LLM_API_URL = os.getenv('LLM_API_URL', 'https://api.openai.com/v1/chat/completions')
 LLM_API_KEY = os.getenv('LLM_API_KEY', '')
 LLM_MODEL_ID = os.getenv('LLM_MODEL_ID', 'gpt-4')
+LLM_API_FORMAT = os.getenv('LLM_API_FORMAT', 'openai').strip().lower()
+
+
+def _get_llm_api_format():
+    """Return normalized LLM API format."""
+    return 'gemini' if LLM_API_FORMAT == 'gemini' else 'openai'
+
+
+def _build_llm_headers():
+    """Build HTTP headers for current LLM API format."""
+    if _get_llm_api_format() == 'gemini':
+        return {
+            'Content-Type': 'application/json'
+        }
+
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {LLM_API_KEY}'
+    }
+
+
+def _build_llm_url():
+    """Build request URL for current LLM API format."""
+    api_url = LLM_API_URL
+
+    if _get_llm_api_format() == 'gemini':
+        # If user provides only gateway root URL, auto-complete Gemini endpoint path.
+        if 'generateContent' not in api_url:
+            trimmed_url = api_url.rstrip('/')
+            api_url = f"{trimmed_url}/v1beta/models/{{model}}:generateContent"
+
+        api_url = api_url.replace('{model}', quote(LLM_MODEL_ID, safe=''))
+        api_url = api_url.replace('{api_key}', quote(LLM_API_KEY, safe=''))
+
+        if 'key=' not in api_url and '{api_key}' not in LLM_API_URL and LLM_API_KEY:
+            separator = '&' if '?' in api_url else '?'
+            api_url = f"{api_url}{separator}key={quote(LLM_API_KEY, safe='')}"
+
+    return api_url
+
+
+def _build_llm_payload(messages, temperature, max_tokens):
+    """Build request payload for current LLM API format."""
+    if _get_llm_api_format() == 'gemini':
+        system_messages = []
+        contents = []
+
+        for msg in messages:
+            role = (msg or {}).get('role', 'user')
+            content = (msg or {}).get('content', '')
+            if not isinstance(content, str):
+                content = json.dumps(content, ensure_ascii=False)
+
+            if role == 'system':
+                if content.strip():
+                    system_messages.append(content)
+                continue
+
+            gemini_role = 'model' if role == 'assistant' else 'user'
+            contents.append({
+                'role': gemini_role,
+                'parts': [{'text': content}]
+            })
+
+        if not contents:
+            contents = [{'role': 'user', 'parts': [{'text': ''}]}]
+
+        payload = {
+            'contents': contents,
+            'generationConfig': {
+                'temperature': temperature,
+                'maxOutputTokens': max_tokens
+            }
+        }
+
+        if system_messages:
+            payload['systemInstruction'] = {
+                'parts': [{'text': '\n'.join(system_messages)}]
+            }
+
+        return payload
+
+    return {
+        'model': LLM_MODEL_ID,
+        'messages': messages,
+        'temperature': temperature,
+        'max_tokens': max_tokens,
+        # Explicitly disable streaming to avoid chunked/incomplete handling issues
+        'stream': False
+    }
+
+
+def _extract_text_from_llm_response(result):
+    """Extract response text for current LLM API format."""
+    if _get_llm_api_format() == 'gemini':
+        candidates = result.get('candidates', [])
+        if candidates:
+            content_obj = candidates[0].get('content', {})
+            parts = content_obj.get('parts', [])
+            text = ''.join(part.get('text', '') for part in parts if isinstance(part, dict)).strip()
+            if text:
+                return text
+
+        raise LLMError(
+            "Unexpected Gemini response format",
+            error_type="parse_error",
+            raw_response=json.dumps(result, ensure_ascii=False, indent=2)
+        )
+
+    if 'choices' in result and len(result['choices']) > 0:
+        text = result['choices'][0].get('message', {}).get('content', '').strip()
+        if text:
+            return text
+
+    raise LLMError(
+        "Unexpected OpenAI-compatible response format",
+        error_type="parse_error",
+        raw_response=json.dumps(result, ensure_ascii=False, indent=2)
+    )
+
+
+def _call_llm_text(messages, temperature, max_tokens, timeout):
+    """Call LLM API and return plain text output."""
+    if not LLM_API_KEY:
+        raise LLMError(
+            "LLM_API_KEY not configured in .env file",
+            error_type="config_error"
+        )
+
+    try:
+        response = requests.post(
+            _build_llm_url(),
+            headers=_build_llm_headers(),
+            json=_build_llm_payload(messages, temperature, max_tokens),
+            timeout=timeout
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        text = _extract_text_from_llm_response(result)
+        if not text:
+            raise LLMError(
+                "LLM returned empty content",
+                error_type="parse_error",
+                raw_response=json.dumps(result, ensure_ascii=False, indent=2)
+            )
+        return text
+
+    except requests.exceptions.RequestException as e:
+        api_error_detail = None
+        try:
+            if hasattr(e, 'response') and e.response is not None:
+                api_error_detail = e.response.text
+        except Exception:
+            pass
+
+        raise LLMError(
+            f"LLM API request failed: {str(e)}",
+            error_type="api_error",
+            api_error=api_error_detail
+        )
+
+# Summon logging configuration
+SUMMON_LOG_FILE = os.getenv('SUMMON_LOG_FILE', 'summon_logs.jsonl')
+SUMMON_STATS_FILE = os.getenv('SUMMON_STATS_FILE', 'summon_stats.json')
+SUMMON_LOG_LOCK = threading.Lock()
 
 # Class name mappings (English to Chinese and variations)
 CLASS_MAPPINGS = {
@@ -170,7 +339,16 @@ def build_prompt(master_intro, relic, vow, extra_text, summoning_pool_text):
 
 {summoning_pool_text}
 
-## 要求
+## 输出要求（必须严格遵守）
+
+1. 你可以先进行简短分析（可选）。
+2. 但在输出的最后一行，必须且只能追加以下标签格式：
+   <servant>从给定英灵池中选择的中文名</servant>
+3. 标签内必须是“英灵池中真实存在的中文名”，不得编造。
+4. 不要输出多个 <servant> 标签。
+5. 无论信息是否充分、是否存在不确定性，你都必须从英灵池中强制选择一名从者，禁止拒答、禁止要求补充信息、禁止输出“无法判断/无法选择”。
+
+## 选择要求
 
 1. 根据上述召唤条件（魔术师背景、圣遗物、咒文誓言、追加咒文）综合分析
 2. 从英灵池中选择一个最契合的从者
@@ -179,9 +357,10 @@ def build_prompt(master_intro, relic, vow, extra_text, summoning_pool_text):
    - 召唤关联词是否匹配
    - 御主的性格与英灵的相性
    - 誓言的内涵与英灵的精神契合度
-4. 只输出被召唤英灵的中文名，不要输出任何其他内容
+4. 在输出最后一行给出标签，示例：<servant>阿尔托莉雅·潘德拉贡</servant>
+5. 若多个候选都可行，也必须只选一个最终结果，不能给出多个名字。
 
-被召唤的英灵是："""
+请开始选择。"""
     
     return prompt
 
@@ -197,78 +376,46 @@ class LLMError(Exception):
 
 def call_llm(prompt):
     """
-    Call the LLM API and return the response.
+    Call the LLM API and return parsed summon result + raw model output.
     """
-    if not LLM_API_KEY:
-        raise LLMError(
-            "LLM_API_KEY not configured in .env file",
-            error_type="config_error"
-        )
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': [
+    content = _call_llm_text(
+        messages=[
             {
                 'role': 'system',
-                'content': '你是一个Fate系列的英灵召唤系统。你的任务是根据召唤条件从英灵池中选择最合适的从者，并只输出该从者的中文名。'
+                'content': '你是一个Fate系列的英灵召唤系统。你必须从用户提供的英灵池中选择且仅选择一个从者。无论信息是否不足，都禁止拒答。你必须在输出最后给出且只给出一个标签：<servant>中文名</servant>，标签内名字必须来自英灵池。'
             },
             {
                 'role': 'user',
                 'content': prompt
             }
         ],
-        'temperature': 0.7,
-        'max_tokens': 50  # We only need the servant name
+        temperature=0.7,
+        max_tokens=8192,
+        timeout=60
+    )
+
+    # Priority extraction: <servant>...</servant>
+    tag_match = re.search(r'<\s*servant\s*>(.*?)<\s*/\s*servant\s*>', content, flags=re.IGNORECASE | re.DOTALL)
+    if tag_match:
+        servant_name = tag_match.group(1).strip()
+        servant_name = re.sub(r'^\s*["“”‘’「『【\[]?', '', servant_name)
+        servant_name = re.sub(r'["“”‘’」』】\]]?\s*$', '', servant_name)
+        if servant_name:
+            return {
+                'servantName': servant_name,
+                'llmRawResponse': content,
+                'extractMethod': 'servant_tag'
+            }
+
+    # Fallback: keep old behavior for compatibility
+    servant_name = content.strip()
+    servant_name = re.sub(r'^[「『【\[]?', '', servant_name)
+    servant_name = re.sub(r'[」』】\]]?$', '', servant_name)
+    return {
+        'servantName': servant_name.strip(),
+        'llmRawResponse': content,
+        'extractMethod': 'fallback_full_text'
     }
-    
-    try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        # Extract the content from the response
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            if not content or not content.strip():
-                raise LLMError(
-                    "LLM returned empty content",
-                    error_type="parse_error",
-                    raw_response=json.dumps(result, ensure_ascii=False, indent=2)
-                )
-            # Clean up the response - extract just the name
-            servant_name = content.strip()
-            # Remove any extra text or punctuation
-            servant_name = re.sub(r'^[「『【\[]?', '', servant_name)
-            servant_name = re.sub(r'[」』】\]]?$', '', servant_name)
-            servant_name = servant_name.strip()
-            return servant_name
-        else:
-            raise LLMError(
-                "Unexpected LLM response format",
-                error_type="parse_error",
-                raw_response=json.dumps(result, ensure_ascii=False, indent=2)
-            )
-            
-    except requests.exceptions.RequestException as e:
-        # Try to get error details from response if available
-        api_error_detail = None
-        try:
-            if hasattr(e, 'response') and e.response is not None:
-                api_error_detail = e.response.text
-        except:
-            pass
-        
-        raise LLMError(
-            f"LLM API request failed: {str(e)}",
-            error_type="api_error",
-            api_error=api_error_detail
-        )
 
 
 def validate_servant_name(name, characters):
@@ -299,6 +446,118 @@ def validate_servant_name(name, characters):
     
     # If no match found, return original (the LLM might have hallucinated)
     return name
+
+
+def _get_client_ip():
+    """Get client IP with proxy support."""
+    forwarded_for = request.headers.get('X-Forwarded-For', '')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.remote_addr or 'unknown'
+
+
+def _build_player_id(client_ip, user_agent):
+    """Build a stable pseudo-anonymous player ID for counting unique players."""
+    raw = f"{client_ip}|{user_agent or ''}"
+    return hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16]
+
+
+def _read_json_file(path, default_value):
+    try:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Warning: failed to read {path}: {e}")
+    return default_value
+
+
+def record_summon_log(servant_name, detected_class):
+    """
+    Record summon event and aggregate stats.
+    - Raw logs: JSONL for audit/debug
+    - Stats: per servant total + unique player count
+    """
+    client_ip = _get_client_ip()
+    user_agent = request.headers.get('User-Agent', '')
+    player_id = _build_player_id(client_ip, user_agent)
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    log_entry = {
+        'timestamp': timestamp,
+        'playerId': player_id,
+        'clientIp': client_ip,
+        'userAgent': user_agent,
+        'servantName': servant_name,
+        'detectedClass': detected_class
+    }
+
+    with SUMMON_LOG_LOCK:
+        # 1) Append JSONL event log
+        try:
+            with open(SUMMON_LOG_FILE, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + '\n')
+        except Exception as e:
+            print(f"Warning: failed to append summon log: {e}")
+
+        # 2) Update aggregate stats
+        stats = _read_json_file(
+            SUMMON_STATS_FILE,
+            {
+                'totalSummons': 0,
+                'servants': {},
+                'updatedAt': None
+            }
+        )
+
+        stats['totalSummons'] = stats.get('totalSummons', 0) + 1
+        servants = stats.setdefault('servants', {})
+        servant_stats = servants.setdefault(servant_name, {
+            'total': 0,
+            'uniquePlayers': 0,
+            'players': {}
+        })
+
+        servant_stats['total'] = servant_stats.get('total', 0) + 1
+        players = servant_stats.setdefault('players', {})
+        players[player_id] = players.get(player_id, 0) + 1
+        servant_stats['uniquePlayers'] = len(players)
+
+        stats['updatedAt'] = timestamp
+
+        try:
+            with open(SUMMON_STATS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Warning: failed to write summon stats: {e}")
+
+
+def get_summon_stats_for_response():
+    """Return summon stats (without internal player map) for frontend/admin viewing."""
+    stats = _read_json_file(
+        SUMMON_STATS_FILE,
+        {
+            'totalSummons': 0,
+            'servants': {},
+            'updatedAt': None
+        }
+    )
+
+    public_servants = []
+    for servant_name, servant_stats in stats.get('servants', {}).items():
+        public_servants.append({
+            'servantName': servant_name,
+            'total': servant_stats.get('total', 0),
+            'uniquePlayers': servant_stats.get('uniquePlayers', 0)
+        })
+
+    public_servants.sort(key=lambda x: x['total'], reverse=True)
+
+    return {
+        'totalSummons': stats.get('totalSummons', 0),
+        'updatedAt': stats.get('updatedAt'),
+        'servants': public_servants
+    }
 
 
 @app.route('/api/summon', methods=['POST'])
@@ -359,17 +618,32 @@ def summon():
         prompt = build_prompt(master_intro, relic, vow, extra_text, pool_text)
         
         # Call the LLM
-        servant_name = call_llm(prompt)
+        llm_result = call_llm(prompt)
+        servant_name = llm_result.get('servantName', '')
+        llm_raw_response = llm_result.get('llmRawResponse', '')
+        extract_method = llm_result.get('extractMethod', 'unknown')
         
         # Validate the servant name
         validated_name = validate_servant_name(servant_name, summoning_pool)
+        pool_names = {(c.get('中文名', '') or c.get('name', '')) for c in summoning_pool}
+        matched_successfully = validated_name in pool_names
+
+        # Record summon statistics (do not fail request if logging fails)
+        try:
+            record_summon_log(validated_name, detected_class)
+        except Exception as e:
+            print(f"Warning: summon stats logging failed: {e}")
         
-        print(f"LLM returned: {servant_name}, Validated: {validated_name}")
+        print(f"LLM returned ({extract_method}): {servant_name}, Validated: {validated_name}")
         
         return jsonify({
             'success': True,
             'servantName': validated_name,
-            'detectedClass': detected_class
+            'detectedClass': detected_class,
+            'extractMethod': extract_method,
+            'validationMatched': matched_successfully,
+            'rawCandidate': servant_name,
+            'llmRawResponse': llm_raw_response
         })
         
     except LLMError as e:
@@ -391,6 +665,22 @@ def summon():
         }), 400
     except Exception as e:
         print(f"Error in summon endpoint: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'errorType': 'unknown_error'
+        }), 500
+
+
+@app.route('/api/summon_stats', methods=['GET'])
+def summon_stats():
+    """Get aggregate summon statistics for deployment monitoring."""
+    try:
+        return jsonify({
+            'success': True,
+            'stats': get_summon_stats_for_response()
+        })
+    except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e),
@@ -668,20 +958,8 @@ def call_llm_for_story(prompt):
     """
     Call the LLM API to generate the summoning story.
     """
-    if not LLM_API_KEY:
-        raise LLMError(
-            "LLM_API_KEY not configured in .env file",
-            error_type="config_error"
-        )
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': [
+    return _call_llm_text(
+        messages=[
             {
                 'role': 'system',
                 'content': '你是一位精通Type-Moon世界观的小说家，擅长撰写Fate系列风格的召唤场景描写。你的文笔华丽而富有感染力，善于营造史诗般的仪式感。'
@@ -691,46 +969,10 @@ def call_llm_for_story(prompt):
                 'content': prompt
             }
         ],
-        'temperature': 0.8,
-        'max_tokens': 4000  # Increased for longer story generation
-    }
-    
-    try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=120)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            if not content or not content.strip():
-                raise LLMError(
-                    "LLM returned empty story content",
-                    error_type="parse_error",
-                    raw_response=json.dumps(result, ensure_ascii=False, indent=2)
-                )
-            return content.strip()
-        else:
-            raise LLMError(
-                "Unexpected LLM response format for story",
-                error_type="parse_error",
-                raw_response=json.dumps(result, ensure_ascii=False, indent=2)
-            )
-            
-    except requests.exceptions.RequestException as e:
-        # Try to get error details from response if available
-        api_error_detail = None
-        try:
-            if hasattr(e, 'response') and e.response is not None:
-                api_error_detail = e.response.text
-        except:
-            pass
-        
-        raise LLMError(
-            f"LLM API request failed: {str(e)}",
-            error_type="api_error",
-            api_error=api_error_detail
-        )
+        temperature=0.8,
+        max_tokens=4000,
+        timeout=120
+    ).strip()
 
 
 @app.route('/api/generate_story', methods=['POST'])
@@ -1188,20 +1430,8 @@ def call_llm_for_game_action(prompt):
     """
     Call the LLM API for game action response.
     """
-    if not LLM_API_KEY:
-        raise LLMError(
-            "LLM_API_KEY not configured in .env file",
-            error_type="config_error"
-        )
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': [
+    content = _call_llm_text(
+        messages=[
             {
                 'role': 'system',
                 'content': '你是一个Fate系列圣杯战争游戏的叙事AI。你负责根据玩家的行动生成相应的故事回应，营造沉浸式的游戏体验。请始终以JSON格式输出。'
@@ -1211,64 +1441,30 @@ def call_llm_for_game_action(prompt):
                 'content': prompt
             }
         ],
-        'temperature': 0.8,
-        'max_tokens': 1000
-    }
-    
+        temperature=0.8,
+        max_tokens=1000,
+        timeout=60
+    )
+
+    # Try to parse JSON from the response
     try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            if not content or not content.strip():
-                raise LLMError(
-                    "LLM returned empty content",
-                    error_type="parse_error",
-                    raw_response=json.dumps(result, ensure_ascii=False, indent=2)
-                )
-            
-            # Try to parse JSON from the response
-            try:
-                # Extract JSON from possible markdown code blocks
-                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
-                if json_match:
-                    json_str = json_match.group(1)
-                else:
-                    json_str = content
-                
-                response_data = json.loads(json_str)
-                return response_data
-            except json.JSONDecodeError:
-                # If JSON parsing fails, return the raw text as the response
-                return {
-                    'response': content,
-                    'stateUpdates': {},
-                    'newIntel': None,
-                    'activateNp': False
-                }
+        # Extract JSON from possible markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+        if json_match:
+            json_str = json_match.group(1)
         else:
-            raise LLMError(
-                "Unexpected LLM response format",
-                error_type="parse_error",
-                raw_response=json.dumps(result, ensure_ascii=False, indent=2)
-            )
-            
-    except requests.exceptions.RequestException as e:
-        api_error_detail = None
-        try:
-            if hasattr(e, 'response') and e.response is not None:
-                api_error_detail = e.response.text
-        except:
-            pass
-        
-        raise LLMError(
-            f"LLM API request failed: {str(e)}",
-            error_type="api_error",
-            api_error=api_error_detail
-        )
+            json_str = content
+
+        response_data = json.loads(json_str)
+        return response_data
+    except json.JSONDecodeError:
+        # If JSON parsing fails, return the raw text as the response
+        return {
+            'response': content,
+            'stateUpdates': {},
+            'newIntel': None,
+            'activateNp': False
+        }
 
 
 # ============ GAME INITIALIZATION SYSTEM ============
@@ -1476,17 +1672,8 @@ def call_llm_for_masters(prompt):
     Call the LLM API to generate enemy Masters (simplified version).
     Returns parsed JSON with masters array containing only basic info.
     """
-    if not LLM_API_KEY:
-        raise LLMError("LLM_API_KEY not configured", error_type="config_error")
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': [
+    content = _call_llm_text(
+        messages=[
             {
                 'role': 'system',
                 'content': '你是一个Fate系列圣杯战争的游戏设计师。只输出JSON格式。'
@@ -1496,40 +1683,26 @@ def call_llm_for_masters(prompt):
                 'content': prompt
             }
         ],
-        'temperature': 0.8,
-        'max_tokens': 1000  # Reduced since we only need basic info
-    }
-    
+        temperature=0.8,
+        max_tokens=1000,
+        timeout=60
+    )
+
     try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            if not content:
-                raise LLMError("LLM returned empty content", error_type="parse_error")
-            
-            # Extract JSON from possible markdown code blocks
-            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
-            if json_match:
-                json_str = json_match.group(1)
-            else:
-                # Try to find JSON object directly
-                json_start = content.find('{')
-                json_end = content.rfind('}') + 1
-                if json_start != -1 and json_end > json_start:
-                    json_str = content[json_start:json_end]
-                else:
-                    json_str = content
-            
-            return json.loads(json_str)
+        # Extract JSON from possible markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+        if json_match:
+            json_str = json_match.group(1)
         else:
-            raise LLMError("Unexpected response format", error_type="parse_error")
-            
-    except requests.exceptions.RequestException as e:
-        raise LLMError(f"API request failed: {str(e)}", error_type="api_error")
+            # Try to find JSON object directly
+            json_start = content.find('{')
+            json_end = content.rfind('}') + 1
+            if json_start != -1 and json_end > json_start:
+                json_str = content[json_start:json_end]
+            else:
+                json_str = content
+
+        return json.loads(json_str)
     except json.JSONDecodeError as e:
         raise LLMError(f"JSON parse error: {str(e)}", error_type="parse_error", raw_response=content)
 
@@ -1541,49 +1714,35 @@ def call_llm_for_master_detail(prompt):
     """
     if not LLM_API_KEY:
         return None
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': [
-            {
-                'role': 'system',
-                'content': '你是Fate系列角色设计师。只输出JSON格式。'
-            },
-            {
-                'role': 'user',
-                'content': prompt
-            }
-        ],
-        'temperature': 0.85,
-        'max_tokens': 800
-    }
-    
+
     try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            if content:
-                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
-                if json_match:
-                    json_str = json_match.group(1)
-                else:
-                    json_start = content.find('{')
-                    json_end = content.rfind('}') + 1
-                    if json_start != -1 and json_end > json_start:
-                        json_str = content[json_start:json_end]
-                    else:
-                        json_str = content
-                return json.loads(json_str)
-        return None
+        content = _call_llm_text(
+            messages=[
+                {
+                    'role': 'system',
+                    'content': '你是Fate系列角色设计师。只输出JSON格式。'
+                },
+                {
+                    'role': 'user',
+                    'content': prompt
+                }
+            ],
+            temperature=0.85,
+            max_tokens=800,
+            timeout=60
+        )
+
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+        if json_match:
+            json_str = json_match.group(1)
+        else:
+            json_start = content.find('{')
+            json_end = content.rfind('}') + 1
+            if json_start != -1 and json_end > json_start:
+                json_str = content[json_start:json_end]
+            else:
+                json_str = content
+        return json.loads(json_str)
     except Exception as e:
         print(f"Error generating master detail: {e}")
         return None
@@ -1595,45 +1754,29 @@ def call_llm_for_servant_selection(prompt):
     """
     if not LLM_API_KEY:
         raise LLMError("LLM_API_KEY not configured", error_type="config_error")
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
-    }
-    
-    payload = {
-        'model': LLM_MODEL_ID,
-        'messages': [
-            {
-                'role': 'system',
-                'content': '你是一个Fate系列的匹配系统。只输出从者的中文名，不要输出任何其他内容。'
-            },
-            {
-                'role': 'user',
-                'content': prompt
-            }
-        ],
-        'temperature': 0.7,
-        'max_tokens': 50
-    }
-    
+
     try:
-        response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if 'choices' in result and len(result['choices']) > 0:
-            content = result['choices'][0].get('message', {}).get('content', '')
-            if content:
-                # Clean up the response
-                servant_name = content.strip()
-                servant_name = re.sub(r'^[「『【\[]?', '', servant_name)
-                servant_name = re.sub(r'[」』】\]]?$', '', servant_name)
-                return servant_name.strip()
-        
-        return None
-            
+        content = _call_llm_text(
+            messages=[
+                {
+                    'role': 'system',
+                    'content': '你是一个Fate系列的匹配系统。只输出从者的中文名，不要输出任何其他内容。'
+                },
+                {
+                    'role': 'user',
+                    'content': prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=50,
+            timeout=60
+        )
+
+        # Clean up the response
+        servant_name = content.strip()
+        servant_name = re.sub(r'^[「『【\[]?', '', servant_name)
+        servant_name = re.sub(r'[」』】\]]?$', '', servant_name)
+        return servant_name.strip()
     except Exception as e:
         print(f"Error selecting servant: {e}")
         return None
@@ -2741,8 +2884,8 @@ def _get_random_starting_location_for_class(servant_class):
 
 @app.route('/')
 def serve_index():
-    """Serve the main page - redirect to game.html"""
-    return send_from_directory('.', 'game.html')
+    """Serve the main page - default to summon.html"""
+    return send_from_directory('.', 'summon.html')
 
 
 @app.route('/game.html')
@@ -2774,6 +2917,7 @@ if __name__ == '__main__':
     print("英灵召唤系统 API 启动中...")
     print("=" * 50)
     print(f"LLM API URL: {LLM_API_URL}")
+    print(f"LLM API Format: {_get_llm_api_format()}")
     print(f"LLM Model: {LLM_MODEL_ID}")
     print(f"API Key configured: {'Yes' if LLM_API_KEY else 'No'}")
     print("=" * 50)
