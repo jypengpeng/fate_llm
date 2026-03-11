@@ -50,47 +50,68 @@ LLM_MODEL_ID = os.getenv('LLM_MODEL_ID', 'gpt-4')
 LLM_API_FORMAT = os.getenv('LLM_API_FORMAT', 'openai').strip().lower()
 
 
-def _get_llm_api_format():
+def _resolve_llm_config(llm_config=None):
+    """Resolve effective LLM config from request override or env defaults."""
+    cfg = llm_config or {}
+    api_url = (cfg.get('apiUrl') or LLM_API_URL or '').strip()
+    api_key = (cfg.get('apiKey') or LLM_API_KEY or '').strip()
+    model_id = (cfg.get('modelId') or LLM_MODEL_ID or '').strip()
+    api_format = (cfg.get('apiFormat') or LLM_API_FORMAT or 'openai').strip().lower()
+    api_format = 'gemini' if api_format == 'gemini' else 'openai'
+    return {
+        'api_url': api_url,
+        'api_key': api_key,
+        'model_id': model_id,
+        'api_format': api_format,
+    }
+
+
+def _get_llm_api_format(llm_config=None):
     """Return normalized LLM API format."""
-    return 'gemini' if LLM_API_FORMAT == 'gemini' else 'openai'
+    return _resolve_llm_config(llm_config)['api_format']
 
 
-def _build_llm_headers():
+def _build_llm_headers(llm_config=None):
     """Build HTTP headers for current LLM API format."""
-    if _get_llm_api_format() == 'gemini':
+    cfg = _resolve_llm_config(llm_config)
+
+    if cfg['api_format'] == 'gemini':
         return {
             'Content-Type': 'application/json'
         }
 
     return {
         'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
+        'Authorization': f"Bearer {cfg['api_key']}"
     }
 
 
-def _build_llm_url():
+def _build_llm_url(llm_config=None):
     """Build request URL for current LLM API format."""
-    api_url = LLM_API_URL
+    cfg = _resolve_llm_config(llm_config)
+    api_url = cfg['api_url']
 
-    if _get_llm_api_format() == 'gemini':
+    if cfg['api_format'] == 'gemini':
         # If user provides only gateway root URL, auto-complete Gemini endpoint path.
         if 'generateContent' not in api_url:
             trimmed_url = api_url.rstrip('/')
             api_url = f"{trimmed_url}/v1beta/models/{{model}}:generateContent"
 
-        api_url = api_url.replace('{model}', quote(LLM_MODEL_ID, safe=''))
-        api_url = api_url.replace('{api_key}', quote(LLM_API_KEY, safe=''))
+        api_url = api_url.replace('{model}', quote(cfg['model_id'], safe=''))
+        api_url = api_url.replace('{api_key}', quote(cfg['api_key'], safe=''))
 
-        if 'key=' not in api_url and '{api_key}' not in LLM_API_URL and LLM_API_KEY:
+        if 'key=' not in api_url and '{api_key}' not in cfg['api_url'] and cfg['api_key']:
             separator = '&' if '?' in api_url else '?'
-            api_url = f"{api_url}{separator}key={quote(LLM_API_KEY, safe='')}"
+            api_url = f"{api_url}{separator}key={quote(cfg['api_key'], safe='')}"
 
     return api_url
 
 
-def _build_llm_payload(messages, temperature, max_tokens):
+def _build_llm_payload(messages, temperature, max_tokens, llm_config=None):
     """Build request payload for current LLM API format."""
-    if _get_llm_api_format() == 'gemini':
+    cfg = _resolve_llm_config(llm_config)
+
+    if cfg['api_format'] == 'gemini':
         system_messages = []
         contents = []
 
@@ -130,7 +151,7 @@ def _build_llm_payload(messages, temperature, max_tokens):
         return payload
 
     return {
-        'model': LLM_MODEL_ID,
+        'model': cfg['model_id'],
         'messages': messages,
         'temperature': temperature,
         'max_tokens': max_tokens,
@@ -139,9 +160,9 @@ def _build_llm_payload(messages, temperature, max_tokens):
     }
 
 
-def _extract_text_from_llm_response(result):
+def _extract_text_from_llm_response(result, llm_config=None):
     """Extract response text for current LLM API format."""
-    if _get_llm_api_format() == 'gemini':
+    if _get_llm_api_format(llm_config) == 'gemini':
         candidates = result.get('candidates', [])
         if candidates:
             content_obj = candidates[0].get('content', {})
@@ -168,25 +189,27 @@ def _extract_text_from_llm_response(result):
     )
 
 
-def _call_llm_text(messages, temperature, max_tokens, timeout):
+def _call_llm_text(messages, temperature, max_tokens, timeout, llm_config=None):
     """Call LLM API and return plain text output."""
-    if not LLM_API_KEY:
+    cfg = _resolve_llm_config(llm_config)
+
+    if not cfg['api_key']:
         raise LLMError(
-            "LLM_API_KEY not configured in .env file",
+            "LLM_API_KEY not configured (request override/env)",
             error_type="config_error"
         )
 
     try:
         response = requests.post(
-            _build_llm_url(),
-            headers=_build_llm_headers(),
-            json=_build_llm_payload(messages, temperature, max_tokens),
+            _build_llm_url(cfg),
+            headers=_build_llm_headers(cfg),
+            json=_build_llm_payload(messages, temperature, max_tokens, cfg),
             timeout=timeout
         )
         response.raise_for_status()
 
         result = response.json()
-        text = _extract_text_from_llm_response(result)
+        text = _extract_text_from_llm_response(result, cfg)
         if not text:
             raise LLMError(
                 "LLM returned empty content",
@@ -374,7 +397,7 @@ class LLMError(Exception):
         self.api_error = api_error  # API error details if available
 
 
-def call_llm(prompt):
+def call_llm(prompt, llm_config=None):
     """
     Call the LLM API and return parsed summon result + raw model output.
     """
@@ -391,7 +414,8 @@ def call_llm(prompt):
         ],
         temperature=0.7,
         max_tokens=8192,
-        timeout=60
+        timeout=60,
+        llm_config=llm_config
     )
 
     # Priority extraction: <servant>...</servant>
@@ -592,6 +616,7 @@ def summon():
         relic = data.get('relic', '')
         vow = data.get('vow', '')
         extra_text = data.get('extraText', '')
+        llm_config = data.get('llmConfig') or {}
         
         # Load all characters
         all_characters = load_characters()
@@ -618,7 +643,7 @@ def summon():
         prompt = build_prompt(master_intro, relic, vow, extra_text, pool_text)
         
         # Call the LLM
-        llm_result = call_llm(prompt)
+        llm_result = call_llm(prompt, llm_config=llm_config)
         servant_name = llm_result.get('servantName', '')
         llm_raw_response = llm_result.get('llmRawResponse', '')
         extract_method = llm_result.get('extractMethod', 'unknown')
@@ -954,7 +979,7 @@ LOCATION: ryuudou_temple
     return prompt
 
 
-def call_llm_for_story(prompt):
+def call_llm_for_story(prompt, llm_config=None):
     """
     Call the LLM API to generate the summoning story.
     """
@@ -971,7 +996,8 @@ def call_llm_for_story(prompt):
         ],
         temperature=0.8,
         max_tokens=4000,
-        timeout=120
+        timeout=120,
+        llm_config=llm_config
     ).strip()
 
 
@@ -1007,6 +1033,7 @@ def generate_story():
             }), 400
         
         servant_name = data.get('servantName', '')
+        llm_config = data.get('llmConfig') or {}
         
         if not servant_name:
             return jsonify({
@@ -1044,7 +1071,7 @@ def generate_story():
         print(f"Summon voice: {summon_voice}")
         
         # Generate story
-        story_raw = call_llm_for_story(prompt)
+        story_raw = call_llm_for_story(prompt, llm_config=llm_config)
         
         # Parse location from story response
         # Format expected: "LOCATION: <location_id>\n\n<story>"
@@ -1426,7 +1453,7 @@ def build_enemy_context(god_view, current_location, player_class):
     return "\n".join(context_parts)
 
 
-def call_llm_for_game_action(prompt):
+def call_llm_for_game_action(prompt, llm_config=None):
     """
     Call the LLM API for game action response.
     """
@@ -1443,7 +1470,8 @@ def call_llm_for_game_action(prompt):
         ],
         temperature=0.8,
         max_tokens=1000,
-        timeout=60
+        timeout=60,
+        llm_config=llm_config
     )
 
     # Try to parse JSON from the response
@@ -1667,7 +1695,7 @@ def build_servant_selection_prompt(master_info, available_servants, target_class
     return prompt
 
 
-def call_llm_for_masters(prompt):
+def call_llm_for_masters(prompt, llm_config=None):
     """
     Call the LLM API to generate enemy Masters (simplified version).
     Returns parsed JSON with masters array containing only basic info.
@@ -1685,7 +1713,8 @@ def call_llm_for_masters(prompt):
         ],
         temperature=0.8,
         max_tokens=1000,
-        timeout=60
+        timeout=60,
+        llm_config=llm_config
     )
 
     try:
@@ -1707,12 +1736,13 @@ def call_llm_for_masters(prompt):
         raise LLMError(f"JSON parse error: {str(e)}", error_type="parse_error", raw_response=content)
 
 
-def call_llm_for_master_detail(prompt):
+def call_llm_for_master_detail(prompt, llm_config=None):
     """
     Call the LLM API to generate detailed master info.
     Returns parsed JSON with master details.
     """
-    if not LLM_API_KEY:
+    cfg = _resolve_llm_config(llm_config)
+    if not cfg['api_key']:
         return None
 
     try:
@@ -1729,7 +1759,8 @@ def call_llm_for_master_detail(prompt):
             ],
             temperature=0.85,
             max_tokens=800,
-            timeout=60
+            timeout=60,
+            llm_config=cfg
         )
 
         json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
@@ -1748,11 +1779,12 @@ def call_llm_for_master_detail(prompt):
         return None
 
 
-def call_llm_for_servant_selection(prompt):
+def call_llm_for_servant_selection(prompt, llm_config=None):
     """
     Call the LLM API to select a servant for a Master.
     """
-    if not LLM_API_KEY:
+    cfg = _resolve_llm_config(llm_config)
+    if not cfg['api_key']:
         raise LLMError("LLM_API_KEY not configured", error_type="config_error")
 
     try:
@@ -1769,7 +1801,8 @@ def call_llm_for_servant_selection(prompt):
             ],
             temperature=0.7,
             max_tokens=50,
-            timeout=60
+            timeout=60,
+            llm_config=cfg
         )
 
         # Clean up the response
@@ -1961,7 +1994,7 @@ def get_random_starting_location(servant_class):
     return random.choice(preferred)
 
 
-def select_servant_and_generate_master_detail_task(master_basic, target_class, player_master_intro, all_masters_basic):
+def select_servant_and_generate_master_detail_task(master_basic, target_class, player_master_intro, all_masters_basic, llm_config=None):
     """
     Combined task function for parallel execution:
     1. Generate detailed master info (in parallel with other masters)
@@ -1975,7 +2008,7 @@ def select_servant_and_generate_master_detail_task(master_basic, target_class, p
         
         # ===== PART 1: Generate detailed master info =====
         detail_prompt = build_master_detail_prompt(master_basic, player_master_intro, all_masters_basic)
-        master_detail = call_llm_for_master_detail(detail_prompt)
+        master_detail = call_llm_for_master_detail(detail_prompt, llm_config=llm_config)
         
         # Merge basic and detailed info
         full_master = {**master_basic}
@@ -2010,7 +2043,7 @@ def select_servant_and_generate_master_detail_task(master_basic, target_class, p
         
         # Use AI to select the best matching servant
         selection_prompt = build_servant_selection_prompt(full_master, available_servants, target_class)
-        selected_name = call_llm_for_servant_selection(selection_prompt)
+        selected_name = call_llm_for_servant_selection(selection_prompt, llm_config=llm_config)
         
         if not selected_name:
             # Fallback: pick randomly
@@ -2036,7 +2069,7 @@ def select_servant_and_generate_master_detail_task(master_basic, target_class, p
         return None
 
 
-def generate_initial_response_task(initial_action, player_servant_data):
+def generate_initial_response_task(initial_action, player_servant_data, llm_config=None):
     """
     Task function for parallel initial story response generation.
     Returns the response string or None on failure.
@@ -2060,7 +2093,7 @@ def generate_initial_response_task(initial_action, player_servant_data):
             },
             False
         )
-        response_data = call_llm_for_game_action(action_prompt)
+        response_data = call_llm_for_game_action(action_prompt, llm_config=llm_config)
         return response_data.get('response', '')
     except Exception as e:
         print(f"Error generating initial response: {e}")
@@ -2117,6 +2150,7 @@ def init_game():
         master_intro = data.get('masterIntro', '')
         summoning_story = data.get('summoningStory', '')
         initial_action = data.get('initialAction', '')
+        llm_config = data.get('llmConfig') or {}
         
         player_servant_class = player_servant_info.get('class', 'Saber')
         player_servant_name = player_servant_info.get('trueName', '')
@@ -2161,7 +2195,8 @@ def init_game():
                 initial_response_future = executor.submit(
                     generate_initial_response_task,
                     initial_action,
-                    player_servant_data
+                    player_servant_data,
+                    llm_config
                 )
             
             # ========== FAST SEQUENTIAL TASK: Generate basic master info ==========
@@ -2169,7 +2204,7 @@ def init_game():
             print(f"Step 1: Generating {len(enemy_classes)} enemy Masters (basic info only)...")
             masters_prompt = build_masters_generation_prompt_simple(enemy_classes, master_intro)
             
-            masters_data = call_llm_for_masters(masters_prompt)
+            masters_data = call_llm_for_masters(masters_prompt, llm_config=llm_config)
             enemy_masters_basic = masters_data.get('masters', [])
             
             if len(enemy_masters_basic) < len(enemy_classes):
@@ -2192,7 +2227,8 @@ def init_game():
                         master_basic,
                         target_class,
                         master_intro,
-                        enemy_masters_basic
+                        enemy_masters_basic,
+                        llm_config
                     )
                     combined_futures.append(future)
             
@@ -2295,6 +2331,78 @@ def health():
         'status': 'ok',
         'llm_configured': bool(LLM_API_KEY)
     })
+
+
+@app.route('/api/llm_models', methods=['POST'])
+def llm_models():
+    """Fetch model list from user-provided OpenAI-compatible endpoint."""
+    try:
+        data = request.get_json() or {}
+        llm_config = data.get('llmConfig') or {}
+        cfg = _resolve_llm_config(llm_config)
+
+        api_url = (cfg.get('api_url') or '').rstrip('/')
+        api_key = cfg.get('api_key') or ''
+
+        if not api_url:
+            return jsonify({'success': False, 'error': 'apiUrl is required'}), 400
+        if not api_key:
+            return jsonify({'success': False, 'error': 'apiKey is required'}), 400
+
+        models_url = api_url
+        if not models_url.endswith('/models'):
+            if not models_url.endswith('/v1'):
+                models_url = f"{models_url}/v1"
+            models_url = f"{models_url}/models"
+
+        response = requests.get(
+            models_url,
+            headers={
+                'Authorization': f'Bearer {api_key}'
+            },
+            timeout=25
+        )
+        response.raise_for_status()
+
+        raw = response.json()
+        models = []
+        if isinstance(raw, dict) and isinstance(raw.get('data'), list):
+            models = [m.get('id') for m in raw.get('data', []) if isinstance(m, dict) and m.get('id')]
+        elif isinstance(raw, dict) and isinstance(raw.get('models'), list):
+            models = [m.get('name') for m in raw.get('models', []) if isinstance(m, dict) and m.get('name')]
+        elif isinstance(raw, list):
+            for item in raw:
+                if isinstance(item, str):
+                    models.append(item)
+                elif isinstance(item, dict):
+                    maybe_id = item.get('id') or item.get('name')
+                    if maybe_id:
+                        models.append(maybe_id)
+
+        models = sorted(list({m.strip() for m in models if isinstance(m, str) and m.strip()}))
+
+        return jsonify({
+            'success': True,
+            'models': models
+        })
+    except requests.exceptions.RequestException as e:
+        detail = None
+        try:
+            if hasattr(e, 'response') and e.response is not None:
+                detail = e.response.text
+        except Exception:
+            detail = None
+
+        return jsonify({
+            'success': False,
+            'error': f'Failed to fetch models: {str(e)}',
+            'detail': detail
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/characters', methods=['GET'])
@@ -2576,6 +2684,7 @@ def game_turn():
         
         god_view_data = data.get('godView', {})
         player_action_raw = data.get('playerAction', {})
+        llm_config = data.get('llmConfig') or {}
         
         if not god_view_data:
             return jsonify({
@@ -2608,7 +2717,7 @@ def game_turn():
         print(f"[game_turn] Player action: {player_action.get('type', 'wait')} - {player_action.get('message', '')[:50] if player_action.get('message') else ''}")
         
         # 调用三阶段流水线
-        game_response = process_game_turn_sync(god_view, player_action)
+        game_response = process_game_turn_sync(god_view, player_action, llm_config=llm_config)
         
         # 转换响应格式
         response_data = {

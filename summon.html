@@ -1919,9 +1919,275 @@
             letter-spacing: 2px;
             opacity: 0.7;
         }
-    </style>
-</head>
-<body>
+
+    /* 锁定背景滚动的通用类（保留你原本的设计） */
+    body.gate-locked { overflow: hidden; }
+
+    /* 
+     * 1. 基础结界（背景层）
+     * 变量均限定在 overlay 组件内，绝对不会污染你外部的页面样式
+     */
+    .llm-gate-overlay {
+        --gold-bright: #ffe599;  /* 极亮的高光金 */
+        --gold-main: #d4af37;    /* 典雅的真金 */
+        --gold-dark: #996515;    /* 阴影暗金 */
+        --gold-glow: rgba(212, 175, 55, 0.4);
+        --bg-dark: #0a0a0d;
+        
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        /* 背景加上一层犹如魔术工房的光晕 */
+        background-color: rgba(10, 10, 13, 0.92);
+        background-image: radial-gradient(circle at 50% -10%, rgba(212, 175, 55, 0.2), transparent 60%);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow-y: auto;
+        animation: gate-fade-in 0.5s ease-out;
+    }
+
+    /* 
+     * 2. 面板主体（魔术礼装感）
+     */
+    .llm-gate-card {
+        width: min(840px, 94vw);
+        position: relative;
+        background: linear-gradient(135deg, rgba(22, 22, 26, 0.98), rgba(8, 8, 10, 1));
+        /* 外层暗金边框与辉光 */
+        border: 1px solid var(--gold-dark);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8), 
+                    0 0 20px rgba(212, 175, 55, 0.1) inset;
+        color: #e8dcc4; /* 偏暖的文字色，类似古老羊皮纸 */
+        font-family: 'Noto Serif SC', 'SimSun', STZhongsong, serif;
+        padding: 40px;
+        border-radius: 2px;
+    }
+
+    /* 内嵌的细线金属框（型月设定的经典UI风格） */
+    .llm-gate-card::before {
+        content: '';
+        position: absolute;
+        inset: 6px;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    /* 内容层级提升，防止被内框遮挡交互 */
+    .llm-gate-card-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* 
+     * 3. 字体与排版
+     */
+    .llm-gate-card h3 {
+        font-size: 1.8rem;
+        text-align: center;
+        margin: 0 0 24px 0;
+        padding-bottom: 20px;
+        /* 黄金渐变文字效果 */
+        background: linear-gradient(to bottom, var(--gold-bright), var(--gold-main));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 15px var(--gold-glow);
+        letter-spacing: 2px;
+        border-bottom: 1px solid var(--gold-dark);
+        position: relative;
+    }
+    
+    /* 标题下的华丽发光刻线 */
+    .llm-gate-card h3::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 2px;
+        background: var(--gold-bright);
+        box-shadow: 0 0 8px var(--gold-main);
+    }
+
+    .llm-gate-card p {
+        font-size: 1.05rem;
+        line-height: 1.85;
+        margin-bottom: 16px;
+        text-align: justify;
+        text-shadow: 1px 1px 2px #000;
+        font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    }
+    
+    .gate-highlight {
+        color: var(--gold-main);
+        font-weight: bold;
+        font-size: 1.1rem;
+        text-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    /* 
+     * 4. 表单与输入框
+     */
+    .llm-gate-config {
+        margin-top: 32px;
+        background: rgba(0,0,0,0.45);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        padding: 24px 30px;
+        position: relative;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .llm-gate-config label {
+        display: block;
+        margin: 16px 0 8px;
+        font-weight: bold;
+        color: var(--gold-main);
+        letter-spacing: 1px;
+        font-size: 0.95rem;
+    }
+
+    /* 输入框：暗色渊源质感 */
+    .llm-gate-config input {
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(10, 10, 12, 0.8);
+        border: 1px solid #333;
+        border-left: 4px solid var(--gold-dark);
+        color: var(--gold-bright);
+        padding: 14px 16px;
+        font-size: 1.05rem;
+        transition: all 0.3s ease;
+        font-family: 'Courier New', Courier, monospace;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+    }
+
+    .llm-gate-config input::placeholder { color: #555; font-family: 'Noto Sans SC', sans-serif; }
+
+    .llm-gate-config input:focus {
+        outline: none;
+        background: #000;
+        border-color: var(--gold-main);
+        border-left-color: var(--gold-bright);
+        box-shadow: 0 0 12px var(--gold-glow), inset 0 2px 5px rgba(0,0,0,0.8);
+    }
+
+    /* 
+     * 5. 操作按钮
+     */
+    .llm-gate-actions {
+        margin-top: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: flex-end;
+    }
+
+    .llm-gate-btn {
+        border: none;
+        cursor: pointer;
+        padding: 12px 28px;
+        font-weight: bold;
+        font-size: 1.05rem;
+        letter-spacing: 2px;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        outline: none;
+    }
+
+    /* 主按钮：强烈的纯金质感（确认按钮） */
+    .llm-gate-btn.primary {
+        background: linear-gradient(to bottom, #f2d184, #b68d3a);
+        color: #1a1103; /* 深褐色文字，对比强烈 */
+        border: 1px solid #ffe599;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.6);
+        text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .llm-gate-btn.primary:hover {
+        background: linear-gradient(to bottom, #ffe599, #cfa043);
+        box-shadow: 0 0 15px var(--gold-glow), inset 0 1px 2px rgba(255,255,255,0.8);
+        transform: translateY(-1px);
+    }
+    .llm-gate-btn.primary:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+    }
+
+    /* 次按钮：暗金线框（前置操作按钮） */
+    .llm-gate-btn.secondary {
+        background: rgba(0,0,0,0.5);
+        color: var(--gold-main);
+        border: 1px solid var(--gold-dark);
+    }
+    .llm-gate-btn.secondary:hover {
+        background: rgba(212,175,55,0.15);
+        border-color: var(--gold-bright);
+        color: var(--gold-bright);
+    }
+
+    /* 提示与状态 */
+    .llm-gate-hint {
+        margin-top: 20px;
+        color: #888894;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        text-align: right;
+        font-family: 'Noto Sans SC', sans-serif;
+    }
+    .llm-gate-status {
+        margin-top: 10px;
+        min-height: 20px;
+        color: #ff4757; /* 错误使用危险色显眼提示 */
+        font-size: 0.95rem;
+        text-align: right;
+        text-shadow: 0 0 8px rgba(255, 71, 87, 0.4);
+    }
+
+    @keyframes gate-fade-in {
+        0% { opacity: 0; transform: scale(0.97) translateY(10px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+</style>
+
+<div id="llmConfigGate" class="llm-gate-overlay" aria-modal="true" role="dialog">
+    <div class="llm-gate-card">
+        <div class="llm-gate-card-content">
+            <h3>◈ 紧急宣告：大圣杯魔力枯竭与术式变更 ◈</h3>
+            <p>致各位降临冬木的魔术师：</p>
+            <p>在过去的短短48小时内，境界记录带观测到了<span class="gate-highlight">超过六十万次</span>的英灵召唤奇迹。此前所未有的共鸣，确凿地证明了诸位强烈的祈愿，但也已令本地脉的魔力储量被彻底抽干。</p>
+            <p>作为仪式的基盘，【系统供魔】已达到绝对临界值，无法再支撑接下来的灵子演算。但圣杯战争绝不会就此停歇。</p>
+            <p>从此刻起，降灵仪式将切换为<span class="gate-highlight">【独立供魔模式】</span>。若想再次敲开英灵之座的大门，请各位御主接入自身的外置魔力源（API Key）。</p>
+
+            <div class="llm-gate-config">
+                <label for="gate-api-url">✦ 【魔力通路】 OpenAI 兼容 URL (逆向代理)</label>
+                <input id="gate-api-url" type="text" placeholder="例如：https://api.openai.com/v1">
+
+                <label for="gate-api-key">✦ 【供魔契约】 API Key (外置魔力源)</label>
+                <input id="gate-api-key" type="password" placeholder="sk-........................">
+
+                <label for="gate-model-id">✦ 【降灵凭依】 Model ID (灵基概念)</label>
+                <input id="gate-model-id" list="gate-model-list" type="text" placeholder="如：gpt-4o-mini 或 cloude-3-haiku">
+                <datalist id="gate-model-list"></datalist>
+
+                <div class="llm-gate-actions">
+                    <button id="gate-fetch-models-btn" class="llm-gate-btn secondary" type="button">探测可用凭依</button>
+                    <button id="gate-confirm-btn" class="llm-gate-btn primary" type="button">确认契约 · 重构召唤阵</button>
+                </div>
+
+                <div class="llm-gate-hint">
+                    ※ 绝对安全保证：以上魔术契约仅封存入您的前端机（localStorage），<br>绝不会向本服务器上传任何凭证信息。
+                </div>
+                <div id="llmGateStatus" class="llm-gate-status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- Background Elements -->
     <div class="bg-container">
         <div class="particles" id="particles"></div>
@@ -3313,6 +3579,149 @@
 
         // API endpoint for summoning (same-origin for public deployment)
         const API_BASE_URL = window.location.origin;
+        const LLM_CONFIG_STORAGE_KEY = 'hgw_user_llm_config';
+
+        function normalizeApiUrl(url) {
+            let out = (url || '').trim();
+            if (!out) return out;
+            out = out.replace(/\/$/, '');
+            if (!/\/v\d+$/i.test(out)) out += '/v1';
+            return out;
+        }
+
+        function getSavedLlmConfig() {
+            try {
+                const raw = localStorage.getItem(LLM_CONFIG_STORAGE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed !== 'object') return null;
+                return parsed;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function getValidatedLlmConfig() {
+            const cfg = getSavedLlmConfig();
+            if (!cfg) return null;
+            const apiUrl = normalizeApiUrl(cfg.apiUrl || '');
+            const apiKey = (cfg.apiKey || '').trim();
+            const modelId = (cfg.modelId || '').trim();
+            if (!apiUrl || !apiKey || !modelId) return null;
+            return { apiUrl, apiKey, modelId };
+        }
+
+        function requireLlmConfig() {
+            const cfg = getValidatedLlmConfig();
+            if (!cfg) throw new Error('请先完成 API 配置（URL / Key / Model）');
+            return cfg;
+        }
+
+        function setGateStatus(text, isError = true) {
+            const el = document.getElementById('llmGateStatus');
+            if (!el) return;
+            el.textContent = text || '';
+            el.style.color = isError ? '#7d2b2b' : '#2d5e34';
+        }
+
+        async function fetchGateModels() {
+            const btn = document.getElementById('gate-fetch-models-btn');
+            const urlInput = document.getElementById('gate-api-url');
+            const keyInput = document.getElementById('gate-api-key');
+            const modelInput = document.getElementById('gate-model-id');
+            const datalist = document.getElementById('gate-model-list');
+
+            const apiUrl = normalizeApiUrl(urlInput.value);
+            const apiKey = keyInput.value.trim();
+            if (!apiUrl || !apiKey) {
+                setGateStatus('请先填写 URL 与 Key 后再获取模型列表。', true);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '获取中...';
+            setGateStatus('');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/llm_models`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        llmConfig: {
+                            apiUrl,
+                            apiKey,
+                            modelId: modelInput.value.trim() || 'placeholder'
+                        }
+                    })
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error || '模型列表获取失败');
+
+                const models = Array.isArray(result.models) ? result.models : [];
+                datalist.innerHTML = '';
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    datalist.appendChild(opt);
+                });
+                if (!modelInput.value.trim() && models.length > 0) {
+                    modelInput.value = models[0];
+                }
+                setGateStatus(`已获取 ${models.length} 个模型，可直接选择或手动输入。`, false);
+            } catch (error) {
+                setGateStatus(`获取模型失败：${error.message}`, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '获取可用模型列表';
+            }
+        }
+
+        function initLlmGate() {
+            const gate = document.getElementById('llmConfigGate');
+            const urlInput = document.getElementById('gate-api-url');
+            const keyInput = document.getElementById('gate-api-key');
+            const modelInput = document.getElementById('gate-model-id');
+            const fetchBtn = document.getElementById('gate-fetch-models-btn');
+            const confirmBtn = document.getElementById('gate-confirm-btn');
+
+            const saved = getSavedLlmConfig();
+            if (saved) {
+                urlInput.value = saved.apiUrl || 'https://api.openai.com/v1';
+                keyInput.value = saved.apiKey || '';
+                modelInput.value = saved.modelId || '';
+            } else {
+                urlInput.value = 'https://api.openai.com/v1';
+            }
+
+            const validCfg = getValidatedLlmConfig();
+            if (validCfg) {
+                gate.style.display = 'none';
+                document.body.classList.remove('gate-locked');
+                return;
+            }
+
+            document.body.classList.add('gate-locked');
+            fetchBtn.addEventListener('click', fetchGateModels);
+            confirmBtn.addEventListener('click', () => {
+                const apiUrl = normalizeApiUrl(urlInput.value);
+                const apiKey = keyInput.value.trim();
+                const modelId = modelInput.value.trim();
+
+                if (!apiUrl || !apiKey || !modelId) {
+                    setGateStatus('请完整填写 URL / Key / Model 后再继续。', true);
+                    return;
+                }
+
+                localStorage.setItem(LLM_CONFIG_STORAGE_KEY, JSON.stringify({
+                    apiUrl,
+                    apiKey,
+                    modelId,
+                    updatedAt: Date.now()
+                }));
+
+                gate.style.display = 'none';
+                document.body.classList.remove('gate-locked');
+            });
+        }
         
         // Store the summoned servant name globally
         let summonedServantName = '';
@@ -3354,7 +3763,8 @@
                         masterIntro: masterIntro,
                         relic: relic,
                         vow: vow,
-                        extraText: extraText
+                        extraText: extraText,
+                        llmConfig: requireLlmConfig()
                     })
                 });
                 responseText = await response.text();
@@ -3437,7 +3847,8 @@
                         masterIntro: masterIntro,
                         relic: relic,
                         vow: vow,
-                        extraText: extraText
+                        extraText: extraText,
+                        llmConfig: requireLlmConfig()
                     })
                 });
                 responseText = await response.text();
@@ -3811,7 +4222,10 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(initPayload)
+                    body: JSON.stringify({
+                        ...initPayload,
+                        llmConfig: requireLlmConfig()
+                    })
                 });
                 
                 const responseText = await response.text();
@@ -4188,6 +4602,7 @@
 
         // Allow Enter key to submit action
         document.addEventListener('DOMContentLoaded', () => {
+            initLlmGate();
             const actionInput = document.getElementById('playerActionInput');
             if (actionInput) {
                 actionInput.addEventListener('keydown', (e) => {

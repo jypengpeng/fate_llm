@@ -42,47 +42,68 @@ LLM_MODEL_ID = os.getenv('LLM_MODEL_ID', 'gpt-4')
 LLM_API_FORMAT = os.getenv('LLM_API_FORMAT', 'openai').strip().lower()
 
 
-def _get_llm_api_format() -> str:
+def _resolve_llm_config(llm_config: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    """合并请求级配置与环境变量配置，返回生效的LLM配置。"""
+    cfg = llm_config or {}
+    api_url = (cfg.get('apiUrl') or LLM_API_URL or '').strip()
+    api_key = (cfg.get('apiKey') or LLM_API_KEY or '').strip()
+    model_id = (cfg.get('modelId') or LLM_MODEL_ID or '').strip()
+    api_format = (cfg.get('apiFormat') or LLM_API_FORMAT or 'openai').strip().lower()
+    api_format = 'gemini' if api_format == 'gemini' else 'openai'
+    return {
+        'api_url': api_url,
+        'api_key': api_key,
+        'model_id': model_id,
+        'api_format': api_format,
+    }
+
+
+def _get_llm_api_format(llm_config: Optional[Dict[str, str]] = None) -> str:
     """返回规范化的LLM API格式。"""
-    return 'gemini' if LLM_API_FORMAT == 'gemini' else 'openai'
+    return _resolve_llm_config(llm_config)['api_format']
 
 
-def _build_llm_headers() -> Dict[str, str]:
+def _build_llm_headers(llm_config: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """构建当前LLM格式所需请求头。"""
-    if _get_llm_api_format() == 'gemini':
+    cfg = _resolve_llm_config(llm_config)
+
+    if cfg['api_format'] == 'gemini':
         return {
             'Content-Type': 'application/json'
         }
 
     return {
         'Content-Type': 'application/json',
-        'Authorization': f'Bearer {LLM_API_KEY}'
+        'Authorization': f"Bearer {cfg['api_key']}"
     }
 
 
-def _build_llm_url() -> str:
+def _build_llm_url(llm_config: Optional[Dict[str, str]] = None) -> str:
     """构建当前LLM格式请求URL。"""
-    api_url = LLM_API_URL
+    cfg = _resolve_llm_config(llm_config)
+    api_url = cfg['api_url']
 
-    if _get_llm_api_format() == 'gemini':
+    if cfg['api_format'] == 'gemini':
         # 如果只配置了网关根路径，自动补全 Gemini generateContent 路径
         if 'generateContent' not in api_url:
             trimmed_url = api_url.rstrip('/')
             api_url = f"{trimmed_url}/v1beta/models/{{model}}:generateContent"
 
-        api_url = api_url.replace('{model}', quote(LLM_MODEL_ID, safe=''))
-        api_url = api_url.replace('{api_key}', quote(LLM_API_KEY, safe=''))
+        api_url = api_url.replace('{model}', quote(cfg['model_id'], safe=''))
+        api_url = api_url.replace('{api_key}', quote(cfg['api_key'], safe=''))
 
-        if 'key=' not in api_url and '{api_key}' not in LLM_API_URL and LLM_API_KEY:
+        if 'key=' not in api_url and '{api_key}' not in cfg['api_url'] and cfg['api_key']:
             separator = '&' if '?' in api_url else '?'
-            api_url = f"{api_url}{separator}key={quote(LLM_API_KEY, safe='')}"
+            api_url = f"{api_url}{separator}key={quote(cfg['api_key'], safe='')}"
 
     return api_url
 
 
-def _build_llm_payload(messages: List[Dict[str, str]], max_tokens: int, temperature: float) -> Dict[str, Any]:
+def _build_llm_payload(messages: List[Dict[str, str]], max_tokens: int, temperature: float, llm_config: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """构建当前LLM格式请求体。"""
-    if _get_llm_api_format() == 'gemini':
+    cfg = _resolve_llm_config(llm_config)
+
+    if cfg['api_format'] == 'gemini':
         system_messages: List[str] = []
         contents: List[Dict[str, Any]] = []
 
@@ -122,16 +143,16 @@ def _build_llm_payload(messages: List[Dict[str, str]], max_tokens: int, temperat
         return payload
 
     return {
-        'model': LLM_MODEL_ID,
+        'model': cfg['model_id'],
         'messages': messages,
         'temperature': temperature,
         'max_tokens': max_tokens
     }
 
 
-def _extract_text_from_llm_response(result: Dict[str, Any]) -> str:
+def _extract_text_from_llm_response(result: Dict[str, Any], llm_config: Optional[Dict[str, str]] = None) -> str:
     """从当前LLM格式响应中提取文本。"""
-    if _get_llm_api_format() == 'gemini':
+    if _get_llm_api_format(llm_config) == 'gemini':
         candidates = result.get('candidates', [])
         if candidates:
             content_obj = candidates[0].get('content', {})
@@ -234,7 +255,7 @@ def parse_player_movement(action_text: str, current_location: str, location_grap
     return None
 
 
-def call_llm(messages: List[Dict[str, str]], max_tokens: int = 2000, temperature: float = 0.8) -> str:
+def call_llm(messages: List[Dict[str, str]], max_tokens: int = 2000, temperature: float = 0.8, llm_config: Optional[Dict[str, str]] = None) -> str:
     """
     调用LLM API
     
@@ -246,20 +267,22 @@ def call_llm(messages: List[Dict[str, str]], max_tokens: int = 2000, temperature
     Returns:
         LLM响应文本
     """
-    if not LLM_API_KEY:
+    cfg = _resolve_llm_config(llm_config)
+
+    if not cfg['api_key']:
         raise ValueError("LLM_API_KEY not configured")
     
     try:
         response = requests.post(
-            _build_llm_url(),
-            headers=_build_llm_headers(),
-            json=_build_llm_payload(messages, max_tokens=max_tokens, temperature=temperature),
+            _build_llm_url(cfg),
+            headers=_build_llm_headers(cfg),
+            json=_build_llm_payload(messages, max_tokens=max_tokens, temperature=temperature, llm_config=cfg),
             timeout=120
         )
         response.raise_for_status()
-        
+
         result = response.json()
-        return _extract_text_from_llm_response(result)
+        return _extract_text_from_llm_response(result, cfg)
             
     except requests.exceptions.RequestException as e:
         raise ValueError(f"LLM API request failed: {str(e)}")
@@ -564,7 +587,8 @@ def generate_location_narrative(
     characters: List[CharacterState],
     player_action: Dict[str, Any],
     is_player_location: bool,
-    god_view: GodView
+    god_view: GodView,
+    llm_config: Optional[Dict[str, str]] = None
 ) -> LocationNarrativeResult:
     """
     生成单个地点的叙事（第一步）
@@ -593,7 +617,7 @@ def generate_location_narrative(
         # 玩家地点需要更多token
         max_tokens = 2000 if is_player_location else 300
         
-        narrative = call_llm(messages, max_tokens=max_tokens)
+        narrative = call_llm(messages, max_tokens=max_tokens, llm_config=llm_config)
         
         # 判断是否有战斗（简单启发式）
         combat_keywords = ['战斗', '攻击', '宝具', '剑', '魔术', '冲突', '对峙', '杀', '伤']
@@ -622,7 +646,8 @@ def update_characters_after_narrative(
     narrative_result: LocationNarrativeResult,
     characters: List[CharacterState],
     location: LocationNode,
-    god_view: GodView
+    god_view: GodView,
+    llm_config: Optional[Dict[str, str]] = None
 ) -> List[CharacterStateUpdate]:
     """
     根据叙事更新角色状态（第二步）
@@ -653,7 +678,7 @@ def update_characters_after_narrative(
             return []
         
         # 调用LLM获取JSON更新
-        response = call_llm(messages, max_tokens=1500, temperature=0.3)
+        response = call_llm(messages, max_tokens=1500, temperature=0.3, llm_config=llm_config)
         
         # 解析JSON响应
         # 尝试提取JSON部分
@@ -710,7 +735,7 @@ def update_characters_after_narrative(
         return []
 
 
-def process_game_turn_sync(god_view: GodView, player_action: Dict[str, Any]) -> GameResponse:
+def process_game_turn_sync(god_view: GodView, player_action: Dict[str, Any], llm_config: Optional[Dict[str, str]] = None) -> GameResponse:
     """
     同步处理游戏回合 - 两步请求模式
     
@@ -787,7 +812,8 @@ def process_game_turn_sync(god_view: GodView, player_action: Dict[str, Any]) -> 
                     task['characters'],
                     player_action,
                     task['is_player_location'],
-                    god_view
+                    god_view,
+                    llm_config
                 )
                 futures[future] = task
                 task_map[task['location_id']] = task
@@ -822,7 +848,8 @@ def process_game_turn_sync(god_view: GodView, player_action: Dict[str, Any]) -> 
                     narrative_result,
                     task['characters'],
                     task['location'],
-                    god_view
+                    god_view,
+                    llm_config
                 )
                 update_futures[future] = (loc_id, narrative_result, task)
             

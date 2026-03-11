@@ -2797,6 +2797,24 @@
 
         // API Base URL
         const API_BASE_URL = 'http://localhost:5000';
+        const LLM_CONFIG_STORAGE_KEY = 'hgw_user_llm_config';
+
+        function getSavedLlmConfig() {
+            try {
+                const raw = localStorage.getItem(LLM_CONFIG_STORAGE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed !== 'object') return null;
+                if (!parsed.apiUrl || !parsed.apiKey || !parsed.modelId) return null;
+                return {
+                    apiUrl: parsed.apiUrl,
+                    apiKey: parsed.apiKey,
+                    modelId: parsed.modelId
+                };
+            } catch (_) {
+                return null;
+            }
+        }
 
         // ============ CHARACTER SYSTEM ============
         // 所有角色（御主+从者组合）的状态
@@ -4524,7 +4542,8 @@
                     },
                     body: JSON.stringify({
                         godView: godViewData,
-                        playerAction: playerAction
+                        playerAction: playerAction,
+                        llmConfig: getSavedLlmConfig()
                     })
                 });
                 
